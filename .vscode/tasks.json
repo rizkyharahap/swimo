@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Swimo API",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "export $(grep -v '^#' .env | xargs) && go run ./cmd/app/main.go"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
