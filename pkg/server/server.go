@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rizkyharahap/swimo/config"
+	"github.com/rizkyharahap/swimo/database"
 	"github.com/rizkyharahap/swimo/pkg/logger"
 )
 
@@ -20,9 +21,7 @@ type Server struct {
 	logger          *logger.Logger
 	config          config.HTTPConfig
 	shutdownTimeout time.Duration
-	caseSensitive   bool
-	strictRouting   bool
-	bodyLimit       int64
+	dbManager       *database.Manager
 }
 
 // NewServer creates a new HTTP server with the given configuration
@@ -31,9 +30,7 @@ func NewServer(cfg config.HTTPConfig, log *logger.Logger) *Server {
 		config:          cfg,
 		logger:          log,
 		shutdownTimeout: 30 * time.Second, // Default shutdown timeout
-		caseSensitive:   true,             // Default to case sensitive
-		strictRouting:   false,            // Default to non-strict routing
-		bodyLimit:       int64(cfg.BodyLimitBytes),
+		dbManager:       database.NewManager(log),
 	}
 }
 
@@ -111,6 +108,16 @@ func (s *Server) gracefulShutdown(ctx context.Context) error {
 	if err := s.server.Shutdown(shutdownCtx); err != nil {
 		s.logger.Error("Server shutdown failed", "error", err)
 		return fmt.Errorf("server shutdown failed: %w", err)
+	}
+
+	// Close database connections
+	if s.dbManager != nil {
+		s.logger.Info("Closing database connections...")
+		if err := s.dbManager.CloseAll(); err != nil {
+			s.logger.Error("Failed to close database connections", "error", err)
+			return fmt.Errorf("database shutdown failed: %w", err)
+		}
+		s.logger.Info("Database connections closed successfully")
 	}
 
 	s.logger.Info("Server shutdown completed successfully")

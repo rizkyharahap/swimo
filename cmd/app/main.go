@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/rizkyharahap/swimo/config"
+	"github.com/rizkyharahap/swimo/database"
+	"github.com/rizkyharahap/swimo/internal/auth"
 	"github.com/rizkyharahap/swimo/pkg/logger"
 	"github.com/rizkyharahap/swimo/pkg/middleware"
 	"github.com/rizkyharahap/swimo/pkg/server"
@@ -30,29 +34,48 @@ func main() {
 		"version", "1.0.0",
 	)
 
-	// Create HTTP server with configuration options
-	httpServer := server.NewServer(cfg.HTTP, log).
+	// Create HTTP server
+	httpServer := server.NewServer(cfg.HTTP, log)
+
+	// Initialize database manager through server
+	dbManager := database.NewManager(log)
+
+	// Set up database connection
+	db, err := dbManager.Connect(context.Background(), "primary", &cfg.Database)
+	if err != nil {
+		log.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
+	} else {
+		log.Info("Database connection established successfully")
+	}
+
+	// Initialize auth components
+	authRepo := auth.NewAuthRepository(db.Pool)
+	authUsecase := auth.NewAuthUsecase(cfg, log, db.Pool, authRepo)
+	authHandler := auth.NewAuthHandler(log, authUsecase)
 
 	// Create router
 	mux := http.NewServeMux()
 
 	// Setup routes
-	setupRoutes(mux, log)
+	setupRoutes(mux, authHandler, db != nil)
 
 	// Apply middlewares
 	handler := middleware.Chain(
+		middleware.ErrorHandler,
 		middleware.RecoverMiddleware(log),
 		middleware.LoggingMiddleware(log),
 		middleware.CORSMiddleware(cfg.CORS),
-		middleware.CompressionMiddleware(),
+		middleware.CompressionMiddleware,
 	)(mux)
 
-	// Set the handler
+	// Set handler
 	httpServer.WithHandler(handler)
 
-	// Start the server
+	// Start server
 	log.Info("Application initialized successfully")
 	log.Info("Starting server...")
+
 	if err := httpServer.Start(); err != nil {
 		log.Error("Failed to start server", "error", err)
 		panic(err)
@@ -60,7 +83,7 @@ func main() {
 }
 
 // setupRoutes sets up the application routes
-func setupRoutes(mux *http.ServeMux, log *logger.Logger) {
+func setupRoutes(mux *http.ServeMux, authHandler *auth.AuthHandler, hasDatabase bool) {
 	// Health check endpoint
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -68,7 +91,13 @@ func setupRoutes(mux *http.ServeMux, log *logger.Logger) {
 
 		logger.Info("Health check requested")
 
-		response := fmt.Sprintf(`{"status":"healthy","timestamp":"%s","service":"swimo-api"}`, time.Now().UTC().Format(time.RFC3339))
+		dbStatus := "disconnected"
+		if hasDatabase {
+			dbStatus = "connected"
+		}
+
+		response := fmt.Sprintf(`{"status":"healthy","timestamp":"%s","service":"swimo-api","database":"%s"}`,
+			time.Now().UTC().Format(time.RFC3339), dbStatus)
 		logger.Info("Health check response", "response", response)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -76,71 +105,8 @@ func setupRoutes(mux *http.ServeMux, log *logger.Logger) {
 		fmt.Fprint(w, response)
 	})
 
-	// Hello endpoint for testing
-	mux.HandleFunc("GET /hello", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger := logger.FromContext(ctx)
-
-		logger.Info("Hello endpoint requested")
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"message":"Hello, World!","timestamp":"%s"}`, time.Now().UTC().Format(time.RFC3339))
-	})
-
-	// Test error endpoint
-	mux.HandleFunc("GET /error", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger := logger.FromContext(ctx)
-
-		logger.Error("Test error endpoint requested")
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, `{"status":500,"error":{"code":"INTERNAL_ERROR","message":"This is a test error"}}`)
-	})
-
-	// Test panic endpoint
-	mux.HandleFunc("GET /panic", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger := logger.FromContext(ctx)
-
-		logger.Info("Panic endpoint requested - this will cause a panic")
-
-		// This will be caught by the recover middleware
-		panic("This is a test panic!")
-	})
-
-	// API routes group
-	apiHandler := http.NewServeMux()
-	apiHandler.HandleFunc("GET /api/v1/users", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger := logger.FromContext(ctx)
-
-		logger.Info("Users endpoint requested")
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"data":[{"id":1,"name":"John Doe","email":"john@example.com"},{"id":2,"name":"Jane Smith","email":"jane@example.com"}],"message":"Users retrieved successfully"}`)
-	})
-
-	apiHandler.HandleFunc("POST /api/v1/users", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger := logger.FromContext(ctx)
-
-		logger.Info("Create user endpoint requested", "method", r.Method, "content_length", r.ContentLength)
-
-		// In a real application, you would parse the request body and create a user
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprintf(w, `{"data":{"id":3,"name":"New User","email":"newuser@example.com","created_at":"%s"},"message":"User created successfully"}`, time.Now().UTC().Format(time.RFC3339))
-	})
-
-	// Mount API routes
-	mux.Handle("/api/", http.StripPrefix("/api", apiHandler))
-
-	// Static file serving (optional)
-	// mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
-
-	log.Info("Routes configured successfully")
+	// Auth endpoints
+	if hasDatabase {
+		mux.HandleFunc("POST /api/v1/sign-up", authHandler.SignUp)
+	}
 }

@@ -13,8 +13,8 @@ type Logger struct {
 type Config struct {
 	Level  string // debug|info|warn|error
 	Format string // json|text
-	File   string // path ke log file (kosong = stderr saja)
-	AddSrc bool   // true untuk AddSource
+	File   string
+	AddSrc bool
 }
 
 func New(cfg Config) *Logger {
@@ -46,7 +46,7 @@ func New(cfg Config) *Logger {
 	if cfg.File != "" {
 		file, err := os.OpenFile(cfg.File, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{}))
+			log := slog.New(slog.NewTextHandler(os.Stderr, opts))
 			log.Error("failed to open log file, using stderr", "error", err)
 		} else {
 			writer = file
@@ -64,23 +64,6 @@ func New(cfg Config) *Logger {
 	// Create logger
 	logger := slog.New(handler)
 	return &Logger{Logger: logger}
-}
-
-// Convenience methods for logging
-func (l *Logger) Debug(msg string, args ...any) {
-	l.Logger.Debug(msg, args...)
-}
-
-func (l *Logger) Info(msg string, args ...any) {
-	l.Logger.Info(msg, args...)
-}
-
-func (l *Logger) Warn(msg string, args ...any) {
-	l.Logger.Warn(msg, args...)
-}
-
-func (l *Logger) Error(msg string, args ...any) {
-	l.Logger.Error(msg, args...)
 }
 
 // With returns a new Logger with additional key-value pairs
