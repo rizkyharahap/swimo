@@ -175,7 +175,7 @@
                         "description": "User registered successfully",
                         "examples": {
                             "application/json": {
-                                "message": "User registered successfully."
+                                "message": "User registered successfully"
                             }
                         },
                         "schema": {
@@ -186,7 +186,7 @@
                         "description": "Invalid request body",
                         "examples": {
                             "application/json": {
-                                "message": "Invalid JSON Body."
+                                "message": "Invalid JSON Body"
                             }
                         },
                         "schema": {
@@ -197,7 +197,7 @@
                         "description": "Email already exists",
                         "examples": {
                             "application/json": {
-                                "message": "Email already exists."
+                                "message": "Email already exists"
                             }
                         },
                         "schema": {

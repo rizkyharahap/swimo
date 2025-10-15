@@ -6,11 +6,7 @@ help:
 	@echo "Available targets:"
 	@echo "  swagger        - Generate Swagger JSON, merge only new/changed paths"
 	@echo "  swagger-force  - Force regenerate Swagger JSON (overwrite)"
-	@echo "  clean          - Clean generated files"
-	@echo "  build          - Build application"
-	@echo "  run            - Build and run application"
-	@echo "  dev            - Dev workflow (smart swagger + build + run)"
-	@echo "  swagger-quick  - Quick swagger refresh (merge mode)"
+	@echo "  dev            - Dev workflow (swagger + build + run)"
 	@echo "  check-changes  - Check if annotations changed"
 # -------------------------------------------------------------------
 
@@ -20,14 +16,13 @@ FINAL_JSON=./docs/swagger/swagger.json
 # -------------------------------------------------------------------
 # 🧩 Smart Swagger generation (merge only new/changed paths)
 swagger:
-	@echo "🔍 Checking for annotation changes..."
+	@echo "⚡ Quick Swagger update (merge mode)..."
 	@mkdir -p $(SWAG_OUT)
 	@swag init -g ./cmd/app/main.go -o $(SWAG_OUT) --parseDependency --outputTypes json > /dev/null 2>&1 || true
 	@if [ -f $(SWAG_OUT)/swagger.json ]; then \
-		echo "🧠 Running Go merge tool (swagger-merge.go)..."; \
 		go run ./swagger-merge.go --old $(FINAL_JSON) --new $(SWAG_OUT)/swagger.json; \
 	else \
-		echo "⚠️  No temporary swagger.json generated, skipping merge"; \
+		echo "⚠️  No temporary swagger.json generated"; \
 	fi
 	@rm -rf $(SWAG_OUT)
 
@@ -39,41 +34,10 @@ swagger-force:
 	@echo "✅ Swagger JSON regenerated at $(FINAL_JSON)"
 
 # -------------------------------------------------------------------
-# 🧹 Clean temporary files
-clean:
-	@echo "🧼 Cleaning generated files..."
-	@rm -rf ./docs/swagger/tmp ./docs/swagger/swagger.json.backup
-	@echo "Done."
-
-# -------------------------------------------------------------------
-# 🏗️ Build app
-build:
-	@echo "🛠️  Building..."
-	@go build -o ./main ./cmd/app/main.go
-	@echo "✅ Build complete."
-
-# -------------------------------------------------------------------
-# 🚀 Run app
-run: build
-	@echo "🚀 Running..."
-	@./main
-
-# -------------------------------------------------------------------
-# 🔄 Dev workflow (smart swagger + build + run)
-dev: swagger build run
-
-# -------------------------------------------------------------------
-# ⚡ Quick swagger regeneration (merge mode)
-swagger-quick:
-	@echo "⚡ Quick Swagger update (merge mode)..."
-	@mkdir -p $(SWAG_OUT)
-	@swag init -g ./cmd/app/main.go -o $(SWAG_OUT) --parseDependency --outputTypes json > /dev/null 2>&1 || true
-	@if [ -f $(SWAG_OUT)/swagger.json ]; then \
-		go run ./swagger-merge.go --old $(FINAL_JSON) --new $(SWAG_OUT)/swagger.json; \
-	else \
-		echo "⚠️  No temporary swagger.json generated"; \
-	fi
-	@rm -rf $(SWAG_OUT)
+# 🔄 Dev workflow (swagger + build + run with .env)
+dev: swagger
+	@echo "Loading environment variables from .env..."
+	@export $$(grep -v '^#' .env | xargs) && go run ./cmd/app/main.go
 
 # -------------------------------------------------------------------
 # 🔍 Check if annotations have changed
