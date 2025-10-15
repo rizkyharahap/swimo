@@ -2,18 +2,38 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/rizkyharahap/swimo/config"
 	"github.com/rizkyharahap/swimo/database"
+
 	"github.com/rizkyharahap/swimo/internal/auth"
+	"github.com/rizkyharahap/swimo/internal/health"
 	"github.com/rizkyharahap/swimo/pkg/logger"
 	"github.com/rizkyharahap/swimo/pkg/middleware"
 	"github.com/rizkyharahap/swimo/pkg/server"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+// @title Swimo API
+// @version 1.0
+// @description This is the API documentation for Swimo - a swimming management and tracking application.
+// @termsOfService http://swagger.io/terms/
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /api/v1
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
+
+// @ExternalDocs.url https://github.com/rizkyharahap/swimo
+// @ExternalDocs.description Swimo GitHub Repository
 
 func main() {
 	// Load configuration
@@ -49,16 +69,21 @@ func main() {
 		log.Info("Database connection established successfully")
 	}
 
-	// Initialize auth components
+	// Initialize repositories
 	authRepo := auth.NewAuthRepository(db.Pool)
+
+	// Initialize usecases
 	authUsecase := auth.NewAuthUsecase(cfg, log, db.Pool, authRepo)
+
+	// Initialize handlers
+	healthHandler := health.NewHealthHandler(log, db)
 	authHandler := auth.NewAuthHandler(log, authUsecase)
 
 	// Create router
 	mux := http.NewServeMux()
 
 	// Setup routes
-	setupRoutes(mux, authHandler, db != nil)
+	setupRoutes(mux, db, healthHandler, authHandler)
 
 	// Apply middlewares
 	handler := middleware.Chain(
@@ -83,30 +108,30 @@ func main() {
 }
 
 // setupRoutes sets up the application routes
-func setupRoutes(mux *http.ServeMux, authHandler *auth.AuthHandler, hasDatabase bool) {
-	// Health check endpoint
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger := logger.FromContext(ctx)
-
-		logger.Info("Health check requested")
-
-		dbStatus := "disconnected"
-		if hasDatabase {
-			dbStatus = "connected"
-		}
-
-		response := fmt.Sprintf(`{"status":"healthy","timestamp":"%s","service":"swimo-api","database":"%s"}`,
-			time.Now().UTC().Format(time.RFC3339), dbStatus)
-		logger.Info("Health check response", "response", response)
-
+func setupRoutes(
+	mux *http.ServeMux,
+	db *database.Database,
+	healthHandler *health.HealthHandler,
+	authHandler *auth.AuthHandler,
+) {
+	// Serve swagger.json file directly
+	mux.HandleFunc("GET /swagger/docs", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, response)
+		http.ServeFile(w, r, "docs/swagger/swagger.json")
 	})
 
+	// Swagger UI endpoint
+	mux.HandleFunc("GET /swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/docs"),
+		httpSwagger.DeepLinking(true),
+		httpSwagger.DocExpansion("list"),
+		httpSwagger.DomID("swagger-ui"),
+	))
+
+	mux.HandleFunc("GET /api/v1/healthz", healthHandler.Check)
+
 	// Auth endpoints
-	if hasDatabase {
+	if db != nil {
 		mux.HandleFunc("POST /api/v1/sign-up", authHandler.SignUp)
 	}
 }

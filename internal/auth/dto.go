@@ -8,24 +8,25 @@ import (
 
 // SignUpRequest represents the sign up request data transfer object
 type SignUpRequest struct {
-	Email           string   `json:"email"`
-	Password        string   `json:"password"`
-	ConfirmPassword string   `json:"confirmPassword"`
-	Name            string   `json:"name"`
-	Weight          *float64 `json:"weight"`
-	Height          *float64 `json:"height"`
-	Age             *int16   `json:"age"`
+	Email           string   `json:"email" example:"john@example.com"`
+	Password        string   `json:"password" example:"SecurePassword123"`
+	ConfirmPassword string   `json:"confirmPassword" example:"SecurePassword123"`
+	Name            string   `json:"name" example:"John Doe"`
+	Weight          *float64 `json:"weight" example:"75.5"`
+	Height          *float64 `json:"height" example:"180"`
+	Age             *int16   `json:"age" example:"30"`
 }
 
+// SignInResponse represents the sign in response data transfer object
 type SignInResponse struct {
-	Name         string   `json:"name"`
-	Weight       *float64 `json:"weight"`
-	Height       *float64 `json:"height"`
-	Age          *int16   `json:"age"`
-	Email        string   `json:"email"`
-	Token        string   `json:"token"`
-	RefreshToken string   `json:"refreshToken"`
-	ExpiresInMs  int64    `json:"expiresIn"`
+	Name         string   `json:"name" example:"John Doe"`
+	Weight       *float64 `json:"weight" example:"75.5"`
+	Height       *float64 `json:"height" example:"180"`
+	Age          *int16   `json:"age" example:"30"`
+	Email        string   `json:"email" example:"john@example.com"`
+	Token        string   `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string   `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	ExpiresInMs  int64    `json:"expiresIn" example:"900000"`
 }
 
 func (r *SignUpRequest) ToUserEntity(accountID string) *User {

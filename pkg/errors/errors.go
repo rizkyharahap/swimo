@@ -20,10 +20,10 @@ const (
 
 // AppError represents an application error
 type AppError struct {
-	Code    string      `json:"code"`
-	Message string      `json:"message"`
-	Details interface{} `json:"details,omitempty"`
-	Cause   error       `json:"-"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
+	Cause   error  `json:"-"`
 }
 
 func (e *AppError) Error() string {
@@ -43,7 +43,7 @@ func New(code, message string) *AppError {
 }
 
 // NewWithDetails creates a new AppError with details
-func NewWithDetails(code, message string, details interface{}) *AppError {
+func NewWithDetails(code, message string, details any) *AppError {
 	return &AppError{
 		Code:    code,
 		Message: message,
@@ -61,7 +61,7 @@ func Wrap(err error, code, message string) *AppError {
 }
 
 // WrapWithDetails wraps an existing error into an AppError with details
-func WrapWithDetails(err error, code, message string, details interface{}) *AppError {
+func WrapWithDetails(err error, code, message string, details any) *AppError {
 	return &AppError{
 		Code:    code,
 		Message: message,
@@ -119,7 +119,7 @@ func Is(err, target error) bool {
 }
 
 // As finds the first error in err's chain that matches target
-func As(err error, target interface{}) bool {
+func As(err error, target any) bool {
 	if appErr, ok := err.(*AppError); ok {
 		if targetPtr, ok := target.(**AppError); ok {
 			*targetPtr = appErr
@@ -138,7 +138,7 @@ func ValidationError(message string) *AppError {
 	return New(CodeValidationError, message)
 }
 
-func ValidationErrorWithDetails(message string, details interface{}) *AppError {
+func ValidationErrorWithDetails(message string, details any) *AppError {
 	return NewWithDetails(CodeValidationError, message, details)
 }
 

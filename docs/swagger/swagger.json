@@ -1,0 +1,249 @@
+{
+    "basePath": "/api/v1",
+    "definitions": {
+        "auth.SignUpRequest": {
+            "properties": {
+                "age": {
+                    "example": 30,
+                    "type": "integer"
+                },
+                "confirmPassword": {
+                    "example": "SecurePassword123",
+                    "type": "string"
+                },
+                "email": {
+                    "example": "john@example.com",
+                    "type": "string"
+                },
+                "height": {
+                    "example": 180,
+                    "type": "number"
+                },
+                "name": {
+                    "example": "John Doe",
+                    "type": "string"
+                },
+                "password": {
+                    "example": "SecurePassword123",
+                    "type": "string"
+                },
+                "weight": {
+                    "example": 75.5,
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "github_com_rizkyharahap_swimo_pkg_response.Error": {
+            "example": {
+                "errors": {
+                    "field": "Error message"
+                },
+                "message": "An error occurred"
+            },
+            "properties": {
+                "errors": {},
+                "message": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "github_com_rizkyharahap_swimo_pkg_response.Success": {
+            "example": {
+                "message": "Operation completed successfully"
+            },
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "internal_auth.SignUpRequest": {
+            "properties": {
+                "age": {
+                    "example": 30,
+                    "type": "integer"
+                },
+                "confirmPassword": {
+                    "example": "SecurePassword123",
+                    "type": "string"
+                },
+                "email": {
+                    "example": "john@example.com",
+                    "type": "string"
+                },
+                "height": {
+                    "example": 180,
+                    "type": "number"
+                },
+                "name": {
+                    "example": "John Doe",
+                    "type": "string"
+                },
+                "password": {
+                    "example": "SecurePassword123",
+                    "type": "string"
+                },
+                "weight": {
+                    "example": 75.5,
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "response.Error": {
+            "properties": {
+                "errors": {},
+                "message": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "response.Success": {
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "externalDocs": {
+        "description": "Swimo GitHub Repository",
+        "url": "https://github.com/rizkyharahap/swimo"
+    },
+    "host": "localhost:8080",
+    "info": {
+        "contact": {},
+        "description": "This is the API documentation for Swimo - a swimming management and tracking application.",
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "termsOfService": "http://swagger.io/terms/",
+        "title": "Swimo API",
+        "version": "1.0"
+    },
+    "paths": {
+        "/healthz": {
+            "get": {
+                "description": "Check API and database connectivity",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service healthy"
+                    },
+                    "503": {
+                        "description": "Service unhealthy"
+                    }
+                },
+                "summary": "Health Check",
+                "tags": [
+                    "Monitoring"
+                ]
+            }
+        },
+        "/sign-up": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "description": "Register a new user account with email, password, and profile information",
+                "parameters": [
+                    {
+                        "description": "Sign up request with user details",
+                        "in": "body",
+                        "name": "request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.SignUpRequest"
+                        }
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully",
+                        "examples": {
+                            "application/json": {
+                                "message": "User registered successfully."
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "examples": {
+                            "application/json": {
+                                "message": "Invalid JSON Body."
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Email already exists",
+                        "examples": {
+                            "application/json": {
+                                "message": "Email already exists."
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "examples": {
+                            "application/json": {
+                                "errors": {
+                                    "email": "Email is not a valid format"
+                                },
+                                "message": "Validation Error"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "examples": {
+                            "application/json": {
+                                "message": "Internal server error"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                },
+                "summary": "Sign up new user",
+                "tags": [
+                    "Auth"
+                ]
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "in": "header",
+            "name": "Authorization",
+            "type": "apiKey"
+        }
+    },
+    "swagger": "2.0"
+}
