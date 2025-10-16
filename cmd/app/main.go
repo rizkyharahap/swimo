@@ -134,5 +134,6 @@ func setupRoutes(
 	if db != nil {
 		mux.HandleFunc("POST /api/v1/sign-up", authHandler.SignUp)
 		mux.HandleFunc("POST /api/v1/sign-in", authHandler.SignIn)
+		mux.HandleFunc("POST /api/v1/sign-in-guest", authHandler.SignInGuest)
 	}
 }

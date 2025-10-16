@@ -22,9 +22,9 @@ type User struct {
 	ID        string
 	AccountID string
 	Name      string
-	WeightKG  *float64
-	HeightCM  *float64
-	AgeYears  *int16
+	WeightKG  float64
+	HeightCM  float64
+	AgeYears  int16
 }
 
 type Auth struct {
@@ -33,9 +33,9 @@ type Auth struct {
 	PasswordHash string
 	IsLocked     bool
 	Name         string
-	WeightKG     *float64
-	HeightCM     *float64
-	AgeYears     *int16
+	WeightKG     float64
+	HeightCM     float64
+	AgeYears     int16
 }
 
 type Session struct {
@@ -47,11 +47,11 @@ type Session struct {
 }
 
 type Claims struct {
-	Kind      string `json:"kind"`
-	SessionID string `json:"sid"`
-	Sub       string `json:"sub"` // account_id
-	IssuedAt  int64  `json:"iat"`
-	ExpiresAt int64  `json:"exp"`
+	Kind      string
+	SessionID string
+	Sub       string
+	IssuedAt  int64
+	ExpiresAt int64
 }
 
 func (u *Auth) ComparePassword(password string) error {

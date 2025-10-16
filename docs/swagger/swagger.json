@@ -1,6 +1,36 @@
 {
     "basePath": "/api/v1",
     "definitions": {
+        "auth.SignInGuestRequest": {
+            "properties": {
+                "age": {
+                    "example": 30,
+                    "type": "integer"
+                },
+                "height": {
+                    "example": 180,
+                    "type": "number"
+                },
+                "weight": {
+                    "example": 75.5,
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "auth.SignInRequest": {
+            "properties": {
+                "email": {
+                    "example": "john@example.com",
+                    "type": "string"
+                },
+                "password": {
+                    "example": "SecurePassword123",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "auth.SignUpRequest": {
             "properties": {
                 "age": {
@@ -144,6 +174,192 @@
                 },
                 "summary": "Health Check",
                 "tags": ["Monitoring"]
+            }
+        },
+        "/sign-in": {
+            "post": {
+                "consumes": ["application/json"],
+                "description": "Authenticate user with email and password, returns JWT tokens",
+                "parameters": [
+                    {
+                        "description": "Sign in request with user credentials",
+                        "in": "body",
+                        "name": "request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.SignInRequest"
+                        }
+                    }
+                ],
+                "produces": ["application/json"],
+                "responses": {
+                    "200": {
+                        "description": "Sign in successful",
+                        "examples": {
+                            "application/json": {
+                                "data": {
+                                    "age": 30,
+                                    "email": "john@example.com",
+                                    "height": 180,
+                                    "name": "John Doe",
+                                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                                    "weight": 75.5
+                                },
+                                "message": "Sign in successful"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "examples": {
+                            "application/json": {
+                                "message": "Invalid JSON Body"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "examples": {
+                            "application/json": {
+                                "message": "Invalid email or password"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "examples": {
+                            "application/json": {
+                                "errors": {
+                                    "email": "Email is not a valid format"
+                                },
+                                "message": "Validation Error"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "423": {
+                        "description": "Account locked",
+                        "examples": {
+                            "application/json": {
+                                "message": "Account has been locked"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "examples": {
+                            "application/json": {
+                                "message": "Internal server error"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                },
+                "summary": "Sign in user",
+                "tags": ["Auth"]
+            }
+        },
+        "/sign-in-guest": {
+            "post": {
+                "consumes": ["application/json"],
+                "description": "Authenticate guest user without credentials, returns limited access tokens",
+                "parameters": [
+                    {
+                        "description": "Guest sign in request with optional user agent",
+                        "in": "body",
+                        "name": "request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.SignInGuestRequest"
+                        }
+                    }
+                ],
+                "produces": ["application/json"],
+                "responses": {
+                    "200": {
+                        "description": "Guest sign in successful",
+                        "examples": {
+                            "application/json": {
+                                "data": {
+                                    "name": "Guest",
+                                    "age": 30,
+                                    "height": 180,
+                                    "weight": 75.5,
+                                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJLaW5kIjoiZ3Vlc3QiLCJTZXNzaW9uSUQiOiJjMGJlODI1ZS02ZmZkLTRhNTgtOTVjYy00MDRkODQ2Njk5OGYiLCJTdWIiOiIiLCJJc3N1ZWRBdCI6MTc2MDU5ODU2NCwiRXhwaXJlc0F0IjoxNzYwNjAwMzY0fQ.KY0Q-Ws9B_-2QgPeNGwkLUrbrPwsR7_5kERUGnJkZqY",
+                                    "refreshToken": "a065443670df3b9aec28d9c7e5e4b6b9de1d70a877954f26aef5c470437b81a3",
+                                    "expiresIn": 1799999
+                                },
+                                "message": "Guest sign in successful"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "examples": {
+                            "application/json": {
+                                "message": "Invalid JSON Body"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "403": {
+                        "description": "Guest sign in disabled",
+                        "examples": {
+                            "application/json": {
+                                "message": "Guest sign in is currently disabled"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "429": {
+                        "description": "Guest session limit reached",
+                        "examples": {
+                            "application/json": {
+                                "message": "Guest session limit reached"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "examples": {
+                            "application/json": {
+                                "message": "Internal server error"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                },
+                "security": [],
+                "summary": "Sign in guest",
+                "tags": ["Auth"]
             }
         },
         "/sign-up": {

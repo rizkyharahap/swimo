@@ -37,8 +37,6 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var req SignUpRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Warn("sign-up parse error", "error", err)
-
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response.Error{Message: "Invalid request body"})
 		return
@@ -80,7 +78,6 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Failure 422 {object} response.Error "Validation errors"
 // @Failure 423 {object} response.Error "Account locked"
 // @Failure 500 {object} response.Error "Internal server error"
-// @Security ApiKeyAuth
 // @Router /sign-in [post]
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -88,8 +85,6 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var req SignInRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Warn("sign-in parse error", "error", err)
-
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response.Error{Message: "Invalid request body"})
 		return
@@ -124,4 +119,59 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response.Success{Data: data, Message: "Sign-in successful"})
+}
+
+// SignIn handles guest sign in
+// @Summary Sign in guest
+// @Description Authenticate guest user without credentials, returns limited access tokens
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body SignInGuestRequest true "Guest sign in request with optional user agent"
+// @Success 200 {object} response.Success "Guest sign in successful"
+// @Failure 400 {object} response.Error "Invalid request body"
+// @Failure 403 {object} response.Error "Guest sign in disabled"
+// @Failure 429 {object} response.Error "Guest session limit reached"
+// @Failure 500 {object} response.Error "Internal server error"
+// @Router /sign-in-guest [post]
+func (h *AuthHandler) SignInGuest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Parse request body
+	var req SignInGuestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response.Error{Message: "Invalid request body"})
+		return
+	}
+
+	// Validate request DTO
+	if err := req.Validate(); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(response.Error{Message: "Validation errors", Errors: err.Errors})
+		return
+	}
+
+	data, err := h.authUsecase.SignInGuest(r.Context(), req, r.UserAgent())
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrGuestDisabled):
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(response.Error{Message: "Guest sign-in is currently disabled"})
+			return
+
+		case errors.Is(err, ErrGuestLimited):
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(response.Error{Message: "Guest session limit reached"})
+			return
+
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(response.Error{Message: "Internal server error"})
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response.Success{Data: data, Message: "Sign-in as guest successful"})
 }

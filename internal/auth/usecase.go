@@ -22,6 +22,7 @@ var (
 type AuthUsecase interface {
 	SignUp(ctx context.Context, req SignUpRequest) error
 	SignIn(ctx context.Context, req SignInRequest, userAgent string) (*SignInResponse, error)
+	SignInGuest(ctx context.Context, req SignInGuestRequest, userAgent string) (*SignInGuestResponse, error)
 }
 
 type authUsecase struct {
@@ -110,11 +111,52 @@ func (uc *authUsecase) SignIn(ctx context.Context, req SignInRequest, userAgent 
 
 	return &SignInResponse{
 		Name:         auth.Name,
-		Weight:       auth.WeightKG,
-		Height:       auth.HeightCM,
-		Age:          auth.AgeYears,
 		Email:        auth.Email,
+		Age:          auth.AgeYears,
+		Height:       auth.HeightCM,
+		Weight:       auth.WeightKG,
 		Token:        accessToken,
+		RefreshToken: session.RefreshTokenHash,
+		ExpiresInMs:  time.Until(exp).Milliseconds(),
+	}, nil
+}
+
+func (uc *authUsecase) SignInGuest(ctx context.Context, req SignInGuestRequest, userAgent string) (*SignInGuestResponse, error) {
+	if !uc.cfg.Auth.GuestEnabled {
+		return nil, ErrGuestDisabled
+	}
+
+	if uc.cfg.Auth.GuestRatePerMinute > 0 {
+		since := time.Now().UTC().Add(-1 * time.Minute)
+
+		count, err := uc.authRepo.CountRecentGuestByUsertAgent(ctx, userAgent, since)
+		if err == nil && count >= uc.cfg.Auth.GuestRatePerMinute {
+			return nil, ErrGuestLimited
+		}
+	}
+
+	// Create session with refresh token
+	session, err := NewSession(&uc.cfg.Auth, userAgent, "")
+	if err != nil {
+		return nil, err
+	}
+
+	sessionId, err := uc.authRepo.CreateGuestSession(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+
+	access, exp, err := NewAccessToken(uc.cfg.Auth.JWTSecret, "guest", "", sessionId, uc.cfg.Auth.JWTAccessTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SignInGuestResponse{
+		Name:         "Guest",
+		Weight:       req.Weight,
+		Height:       req.Height,
+		Age:          req.Age,
+		Token:        access,
 		RefreshToken: session.RefreshTokenHash,
 		ExpiresInMs:  time.Until(exp).Milliseconds(),
 	}, nil

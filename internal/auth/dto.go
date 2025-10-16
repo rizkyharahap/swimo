@@ -8,13 +8,13 @@ import (
 
 // SignUpRequest represents the sign up request data transfer object
 type SignUpRequest struct {
-	Email           string   `json:"email" example:"john@example.com"`
-	Password        string   `json:"password" example:"SecurePassword123"`
-	ConfirmPassword string   `json:"confirmPassword" example:"SecurePassword123"`
-	Name            string   `json:"name" example:"John Doe"`
-	Weight          *float64 `json:"weight" example:"75.5"`
-	Height          *float64 `json:"height" example:"180"`
-	Age             *int16   `json:"age" example:"30"`
+	Name            string  `json:"name" example:"John Doe"`
+	Email           string  `json:"email" example:"john@example.com"`
+	Password        string  `json:"password" example:"SecurePassword123"`
+	ConfirmPassword string  `json:"confirmPassword" example:"SecurePassword123"`
+	Age             int16   `json:"age" example:"30"`
+	Height          float64 `json:"height" example:"180"`
+	Weight          float64 `json:"weight" example:"75.5"`
 }
 
 // SignInRequest represents the sign in request data transfer object
@@ -25,14 +25,30 @@ type SignInRequest struct {
 
 // SignInResponse represents the sign in response data transfer object
 type SignInResponse struct {
-	Name         string   `json:"name" example:"John Doe"`
-	Weight       *float64 `json:"weight" example:"75.5"`
-	Height       *float64 `json:"height" example:"180"`
-	Age          *int16   `json:"age" example:"30"`
-	Email        string   `json:"email" example:"john@example.com"`
-	Token        string   `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	RefreshToken string   `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	ExpiresInMs  int64    `json:"expiresIn" example:"900000"`
+	Name         string  `json:"name" example:"John Doe"`
+	Email        string  `json:"email" example:"john@example.com"`
+	Age          int16   `json:"age" example:"30"`
+	Height       float64 `json:"height" example:"180"`
+	Weight       float64 `json:"weight" example:"75.5"`
+	Token        string  `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string  `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	ExpiresInMs  int64   `json:"expiresIn" example:"900000"`
+}
+
+type SignInGuestRequest struct {
+	Age    int16   `json:"age" example:"30"`
+	Height float64 `json:"height" example:"180"`
+	Weight float64 `json:"weight" example:"75.5"`
+}
+
+type SignInGuestResponse struct {
+	Name         string  `json:"name" example:"John Doe"`
+	Age          int16   `json:"age" example:"30"`
+	Height       float64 `json:"height" example:"180"`
+	Weight       float64 `json:"weight" example:"75.5"`
+	Token        string  `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string  `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	ExpiresInMs  int64   `json:"expiresIn" example:"900000"`
 }
 
 func (r *SignUpRequest) ToUserEntity(accountID string) *User {
@@ -45,7 +61,7 @@ func (r *SignUpRequest) ToUserEntity(accountID string) *User {
 	}
 }
 
-// Validate validates the sign up request
+// Validate validates the sign in request
 func (r *SignInRequest) Validate() *validator.ValidationError {
 	errors := make(map[string]string)
 
@@ -93,21 +109,50 @@ func (r *SignUpRequest) Validate() *validator.ValidationError {
 		errors["name"] = "Name is required"
 	}
 
-	if r.Weight == nil {
+	if r.Weight == 0 {
 		errors["weight"] = "Weight is required"
-	} else if *r.Weight < 0 {
+	} else if r.Weight < 0 {
 		errors["weight"] = "Weight cannot be negative"
 	}
 
-	if r.Height == nil {
+	if r.Height == 0 {
 		errors["height"] = "Height is required"
-	} else if *r.Height < 0 {
+	} else if r.Height < 0 {
 		errors["height"] = "Height cannot be negative"
 	}
 
-	if r.Age == nil {
+	if r.Age == 0 {
 		errors["age"] = "Age is required"
-	} else if *r.Age < 0 {
+	} else if r.Age < 0 {
+		errors["age"] = "Age cannot be negative"
+	}
+
+	if len(errors) > 0 {
+		return &validator.ValidationError{Errors: errors}
+	}
+
+	return nil
+}
+
+// Validate validates the sign in guest request
+func (r *SignInGuestRequest) Validate() *validator.ValidationError {
+	errors := make(map[string]string)
+
+	if r.Weight == 0 {
+		errors["weight"] = "Weight is required"
+	} else if r.Weight < 0 {
+		errors["weight"] = "Weight cannot be negative"
+	}
+
+	if r.Height == 0 {
+		errors["height"] = "Height is required"
+	} else if r.Height < 0 {
+		errors["height"] = "Height cannot be negative"
+	}
+
+	if r.Age == 0 {
+		errors["age"] = "Age is required"
+	} else if r.Age < 0 {
 		errors["age"] = "Age cannot be negative"
 	}
 
