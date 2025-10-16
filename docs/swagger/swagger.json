@@ -73,33 +73,6 @@
             },
             "type": "object"
         },
-        "github_com_rizkyharahap_swimo_pkg_response.Error": {
-            "example": {
-                "errors": {
-                    "field": "Error message"
-                },
-                "message": "An error occurred"
-            },
-            "properties": {
-                "errors": {},
-                "message": {
-                    "type": "string"
-                }
-            },
-            "type": "object"
-        },
-        "github_com_rizkyharahap_swimo_pkg_response.Success": {
-            "example": {
-                "message": "Operation completed successfully"
-            },
-            "properties": {
-                "data": {},
-                "message": {
-                    "type": "string"
-                }
-            },
-            "type": "object"
-        },
         "internal_auth.SignUpRequest": {
             "properties": {
                 "age": {
