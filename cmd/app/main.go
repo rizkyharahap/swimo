@@ -133,5 +133,6 @@ func setupRoutes(
 	// Auth endpoints
 	if db != nil {
 		mux.HandleFunc("POST /api/v1/sign-up", authHandler.SignUp)
+		mux.HandleFunc("POST /api/v1/sign-in", authHandler.SignIn)
 	}
 }

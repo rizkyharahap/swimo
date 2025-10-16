@@ -18,6 +18,7 @@ type AuthRepository interface {
 	GetAuthByEmail(ctx context.Context, email string) (*Auth, error)
 	CreateAccount(ctx context.Context, tx pgx.Tx, email, passwordHash string) (id string, err error)
 	CreateUser(ctx context.Context, tx pgx.Tx, user *User) (id string, err error)
+	CreateUserSession(ctx context.Context, session *Session) (id string, err error)
 }
 
 type authRepository struct{ db *pgxpool.Pool }
@@ -81,6 +82,19 @@ func (r *authRepository) CreateUser(ctx context.Context, tx pgx.Tx, user *User) 
 			return "", ErrAccountExists
 		}
 
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (r *authRepository) CreateUserSession(ctx context.Context, session *Session) (id string, err error) {
+	const q = `
+		INSERT INTO SESSINOS (account_id, kind, user_agent, expires_at, refresh_token_hash, refresh_expires_at)
+		VALUES ($1, 'user', $2, $3, $4, $5)
+		RETURNING id`
+
+	if err = r.db.QueryRow(ctx, q, &session.AccountID, &session.UserAgent, &session.ExpiresAt, &session.RefreshTokenHash, &session.RefreshExpiresAt).Scan(&id); err != nil {
 		return "", err
 	}
 

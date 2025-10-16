@@ -17,6 +17,12 @@ type SignUpRequest struct {
 	Age             *int16   `json:"age" example:"30"`
 }
 
+// SignInRequest represents the sign in request data transfer object
+type SignInRequest struct {
+	Email    string `json:"email" example:"john@example.com"`
+	Password string `json:"password" example:"SecurePassword123"`
+}
+
 // SignInResponse represents the sign in response data transfer object
 type SignInResponse struct {
 	Name         string   `json:"name" example:"John Doe"`
@@ -37,6 +43,28 @@ func (r *SignUpRequest) ToUserEntity(accountID string) *User {
 		HeightCM:  r.Height,
 		AgeYears:  r.Age,
 	}
+}
+
+// Validate validates the sign up request
+func (r *SignInRequest) Validate() *validator.ValidationError {
+	errors := make(map[string]string)
+
+	sanitizedEmail := strings.TrimSpace(strings.ToLower(r.Email))
+	if !validator.EmailPattern.MatchString(sanitizedEmail) {
+		errors["email"] = "Email is not a valid format"
+	}
+
+	if r.Password == "" {
+		errors["password"] = "Password is required"
+	} else if len(r.Password) < 8 {
+		errors["password"] = "Password must be at least 8 characters"
+	}
+
+	if len(errors) > 0 {
+		return &validator.ValidationError{Errors: errors}
+	}
+
+	return nil
 }
 
 // Validate validates the sign up request

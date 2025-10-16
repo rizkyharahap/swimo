@@ -133,9 +133,7 @@
         "/healthz": {
             "get": {
                 "description": "Check API and database connectivity",
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Service healthy"
@@ -145,16 +143,12 @@
                     }
                 },
                 "summary": "Health Check",
-                "tags": [
-                    "Monitoring"
-                ]
+                "tags": ["Monitoring"]
             }
         },
         "/sign-up": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Register a new user account with email, password, and profile information",
                 "parameters": [
                     {
@@ -167,9 +161,7 @@
                         }
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "201": {
                         "description": "User registered successfully",
@@ -231,9 +223,7 @@
                     }
                 },
                 "summary": "Sign up new user",
-                "tags": [
-                    "Auth"
-                ]
+                "tags": ["Auth"]
             }
         }
     },

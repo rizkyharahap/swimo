@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -20,6 +21,7 @@ var (
 
 type AuthUsecase interface {
 	SignUp(ctx context.Context, req SignUpRequest) error
+	SignIn(ctx context.Context, req SignInRequest, userAgent string) (*SignInResponse, error)
 }
 
 type authUsecase struct {
@@ -72,4 +74,48 @@ func (uc *authUsecase) SignUp(ctx context.Context, req SignUpRequest) error {
 
 	uc.logger.Info("signup success", "email", email)
 	return nil
+}
+
+func (uc *authUsecase) SignIn(ctx context.Context, req SignInRequest, userAgent string) (*SignInResponse, error) {
+	email := strings.TrimSpace(strings.ToLower(req.Email))
+
+	auth, err := uc.authRepo.GetAuthByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	if auth.IsLocked {
+		return nil, ErrLocked
+	}
+
+	if err = auth.ComparePassword(req.Password); err != nil {
+		return nil, err
+	}
+
+	// create session with refresh token
+	session, err := NewSession(&uc.cfg.Auth, userAgent, auth.AccountID)
+	if err != nil {
+		return nil, err
+	}
+
+	sessionId, err := uc.authRepo.CreateUserSession(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, exp, err := NewAccessToken(uc.cfg.Auth.JWTSecret, "user", auth.AccountID, sessionId, uc.cfg.Auth.JWTAccessTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SignInResponse{
+		Name:         auth.Name,
+		Weight:       auth.WeightKG,
+		Height:       auth.HeightCM,
+		Age:          auth.AgeYears,
+		Email:        auth.Email,
+		Token:        accessToken,
+		RefreshToken: session.RefreshTokenHash,
+		ExpiresInMs:  time.Until(exp).Milliseconds(),
+	}, nil
 }
