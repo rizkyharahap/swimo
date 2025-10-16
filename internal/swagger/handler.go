@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/rizkyharahap/swimo/config"
 	"github.com/rizkyharahap/swimo/pkg/logger"
@@ -11,12 +12,12 @@ import (
 )
 
 type SwaggerHandler struct {
-	cfg     *config.AppConfig
+	cfg     *config.Config
 	logger  *logger.Logger
 	Handler http.HandlerFunc
 }
 
-func NewSwaggerHandler(cfg *config.AppConfig, logger *logger.Logger) *SwaggerHandler {
+func NewSwaggerHandler(cfg *config.Config, logger *logger.Logger) *SwaggerHandler {
 	Handler := httpSwagger.Handler(
 		httpSwagger.URL("/swagger/docs"),
 		httpSwagger.DeepLinking(true),
@@ -44,11 +45,15 @@ func (h *SwaggerHandler) Docs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update host if HTTP_BASE_URL is provided
-	if h.cfg.Host != "" {
-		swaggerJSON["host"] = h.cfg.Host
-		h.logger.Info("Swagger host dynamically configured", "host", h.cfg.Host)
-	}
+	// Update host and schemes if HTTP_BASE_URL is provided
+	urlParts := strings.SplitN(h.cfg.HTTP.BaseURL, "://", 2)
+
+	schemes := []string{urlParts[0]}
+	host := urlParts[1]
+
+	swaggerJSON["host"] = host
+	swaggerJSON["schemes"] = schemes
+	h.logger.Info("Swagger host dynamically configured", "host", host, "schemes", schemes)
 
 	// Marshal back to JSON
 	updatedData, err := json.MarshalIndent(swaggerJSON, "", "    ")

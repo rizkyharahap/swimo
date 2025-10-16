@@ -25,6 +25,7 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @BasePath /api/v1
+// @schemes http https
 
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
@@ -76,7 +77,7 @@ func main() {
 
 	// Initialize handlers
 	healthHandler := health.NewHealthHandler(log, db)
-	swaggerHandler := swagger.NewSwaggerHandler(&cfg.App, log)
+	swaggerHandler := swagger.NewSwaggerHandler(cfg, log)
 	authHandler := auth.NewAuthHandler(log, authUsecase)
 
 	// Create router

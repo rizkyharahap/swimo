@@ -21,7 +21,6 @@ type (
 	AppConfig struct {
 		Name string
 		Env  string // dev|staging|prod
-		Host string
 	}
 
 	LogConfig struct {
@@ -55,6 +54,7 @@ type (
 		IdleTimeout    time.Duration
 		BodyLimitBytes int
 		EnableETag     bool
+		BaseURL        string
 	}
 
 	CORSConfig struct {
@@ -93,7 +93,6 @@ func Parse() *Config {
 	app := AppConfig{
 		Name: os.Getenv("APP_NAME"),
 		Env:  os.Getenv("APP_ENV"),
-		Host: os.Getenv("APP_HOST"),
 	}
 
 	log := LogConfig{
@@ -133,6 +132,7 @@ func Parse() *Config {
 		IdleTimeout:    time.Duration(atoiDef(os.Getenv("HTTP_IDLE_TIMEOUT_MS"), 60000)) * time.Millisecond,
 		BodyLimitBytes: atoiDef(os.Getenv("HTTP_BODY_LIMIT_BYTES"), 10<<20), // 10MB
 		EnableETag:     os.Getenv("HTTP_ETAG") == "true",
+		BaseURL:        os.Getenv("HTTP_BASE_URL"),
 	}
 
 	cors := CORSConfig{
