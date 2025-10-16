@@ -22,6 +22,9 @@ type AuthRepository interface {
 	CreateUserSession(ctx context.Context, session *Session) (id string, err error)
 	CreateGuestSession(ctx context.Context, session *Session) (id string, err error)
 	CountRecentGuestByUsertAgent(ctx context.Context, userAgent string, since time.Time) (count int, err error)
+	GetSessionByRefreshToken(ctx context.Context, refreshToken string) (*Session, error)
+	RevokeSessionById(ctx context.Context, sessionId string) error
+	RevokeSessionByAccountId(ctx context.Context, accountId string, userAgent string) error
 }
 
 type authRepository struct{ db *pgxpool.Pool }
@@ -48,7 +51,7 @@ func (r *authRepository) GetAuthByEmail(ctx context.Context, email string) (*Aut
 		&auth.HeightCM,
 		&auth.AgeYears,
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if err == pgx.ErrNoRows {
 			return nil, ErrInvalidCreds
 		}
 
@@ -59,7 +62,10 @@ func (r *authRepository) GetAuthByEmail(ctx context.Context, email string) (*Aut
 }
 
 func (r *authRepository) CreateAccount(ctx context.Context, tx pgx.Tx, email, passwordHash string) (id string, err error) {
-	const q = `INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING id`
+	const q = `
+		INSERT INTO accounts (email, password_hash)
+		VALUES ($1, $2)
+		RETURNING id`
 
 	if err = tx.QueryRow(ctx, q, email, passwordHash).Scan(&id); err != nil {
 		var pgErr *pgconn.PgError
@@ -118,9 +124,70 @@ func (r *authRepository) CreateGuestSession(ctx context.Context, session *Sessio
 }
 
 func (r *authRepository) CountRecentGuestByUsertAgent(ctx context.Context, userAgent string, since time.Time) (count int, err error) {
-	err = r.db.QueryRow(ctx, `
+	const q = `
 		SELECT COUNT(*) FROM sessions
-		WHERE kind='guest' AND user_agent = $1 AND created_at >= $2`, userAgent, since).Scan(&count)
+		WHERE kind='guest'
+			AND user_agent = $1
+			AND created_at >= $2`
+
+	err = r.db.QueryRow(ctx, q, userAgent, since).Scan(&count)
 
 	return count, err
+}
+
+func (r *authRepository) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (*Session, error) {
+	const q = `
+		SELECT id, account_id, kind, user_agent, expires_at, revoked_at, refresh_token_hash, refresh_expires_at
+		FROM sessions
+		WHERE refresh_token_hash = $1
+			AND revoked_at IS NULL
+			AND refresh_expires_at > NOW()`
+
+	var session Session
+	if err := r.db.QueryRow(ctx, q, refreshToken).Scan(
+		&session.ID,
+		&session.AccountID,
+		&session.Kind,
+		&session.UserAgent,
+		&session.ExpiresAt,
+		&session.RevokedAt,
+		&session.RefreshTokenHash,
+		&session.RefreshExpiresAt,
+	); err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func (r *authRepository) RevokeSessionById(ctx context.Context, sessionId string) error {
+	const q = `
+		UPDATE sessions
+		SET revoked_at = NOW()
+		WHERE id = $1
+			AND revoked_at IS NULL
+		RETURNING id`
+
+	if err := r.db.QueryRow(ctx, q, sessionId).Scan(nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *authRepository) RevokeSessionByAccountId(ctx context.Context, accountId string, userAgent string) error {
+	const q = `
+		UPDATE sessions
+		SET revoked_at = NOW()
+		WHERE account_id = $1
+			AND user_agent = $2
+			AND revoked_at IS NULL
+			AND expires_at > NOW()
+		RETURNING id`
+
+	if err := r.db.QueryRow(ctx, q, accountId, userAgent).Scan(nil); err != nil {
+		return err
+	}
+
+	return nil
 }

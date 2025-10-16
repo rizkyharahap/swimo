@@ -51,6 +51,16 @@ type SignInGuestResponse struct {
 	ExpiresInMs  int64   `json:"expiresIn" example:"900000"`
 }
 
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken" example:"deadc0de1234567890"`
+}
+
+type RefreshTokenResponse struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
+	ExpiresInMs  int64  `json:"expiresInMs"`
+}
+
 func (r *SignUpRequest) ToUserEntity(accountID string) *User {
 	return &User{
 		AccountID: accountID,

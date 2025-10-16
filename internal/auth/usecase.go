@@ -10,19 +10,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rizkyharahap/swimo/config"
 	"github.com/rizkyharahap/swimo/pkg/logger"
+	"github.com/rizkyharahap/swimo/pkg/security"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	ErrGuestDisabled = errors.New("guest sign in disabled")
-	ErrGuestLimited  = errors.New("guest sign in rate limited")
-	ErrLocked        = errors.New("account locked")
+	ErrGuestDisabled       = errors.New("guest sign in disabled")
+	ErrGuestLimited        = errors.New("guest sign in rate limited")
+	ErrLocked              = errors.New("account locked")
+	ErrExpiredRefreshToken = errors.New("expired refresh token")
 )
 
 type AuthUsecase interface {
 	SignUp(ctx context.Context, req SignUpRequest) error
 	SignIn(ctx context.Context, req SignInRequest, userAgent string) (*SignInResponse, error)
 	SignInGuest(ctx context.Context, req SignInGuestRequest, userAgent string) (*SignInGuestResponse, error)
+	SignOut(ctx context.Context, sessionId string) error
+	RefreshToken(ctx context.Context, refreshToken string) (*RefreshTokenResponse, error)
 }
 
 type authUsecase struct {
@@ -93,18 +97,15 @@ func (uc *authUsecase) SignIn(ctx context.Context, req SignInRequest, userAgent 
 		return nil, err
 	}
 
+	// revoke another session
+	if err := uc.authRepo.RevokeSessionByAccountId(ctx, auth.AccountID, userAgent); err != nil {
+		if err != pgx.ErrNoRows {
+			return nil, err
+		}
+	}
+
 	// create session with refresh token
-	session, err := NewSession(&uc.cfg.Auth, userAgent, auth.AccountID)
-	if err != nil {
-		return nil, err
-	}
-
-	sessionId, err := uc.authRepo.CreateUserSession(ctx, session)
-	if err != nil {
-		return nil, err
-	}
-
-	accessToken, exp, err := NewAccessToken(uc.cfg.Auth.JWTSecret, "user", auth.AccountID, sessionId, uc.cfg.Auth.JWTAccessTTL)
+	accessToken, err := uc.createSessionToken(ctx, "user", userAgent, &auth.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,9 +116,9 @@ func (uc *authUsecase) SignIn(ctx context.Context, req SignInRequest, userAgent 
 		Age:          auth.AgeYears,
 		Height:       auth.HeightCM,
 		Weight:       auth.WeightKG,
-		Token:        accessToken,
-		RefreshToken: session.RefreshTokenHash,
-		ExpiresInMs:  time.Until(exp).Milliseconds(),
+		Token:        accessToken.Token,
+		RefreshToken: accessToken.RefreshToken,
+		ExpiresInMs:  accessToken.ExpiresInMs,
 	}, nil
 }
 
@@ -135,18 +136,7 @@ func (uc *authUsecase) SignInGuest(ctx context.Context, req SignInGuestRequest, 
 		}
 	}
 
-	// Create session with refresh token
-	session, err := NewSession(&uc.cfg.Auth, userAgent, "")
-	if err != nil {
-		return nil, err
-	}
-
-	sessionId, err := uc.authRepo.CreateGuestSession(ctx, session)
-	if err != nil {
-		return nil, err
-	}
-
-	access, exp, err := NewAccessToken(uc.cfg.Auth.JWTSecret, "guest", "", sessionId, uc.cfg.Auth.JWTAccessTTL)
+	accessToken, err := uc.createSessionToken(ctx, "guest", userAgent, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +146,73 @@ func (uc *authUsecase) SignInGuest(ctx context.Context, req SignInGuestRequest, 
 		Weight:       req.Weight,
 		Height:       req.Height,
 		Age:          req.Age,
-		Token:        access,
+		Token:        accessToken.Token,
+		RefreshToken: accessToken.RefreshToken,
+		ExpiresInMs:  accessToken.ExpiresInMs,
+	}, nil
+}
+
+func (uc *authUsecase) SignOut(ctx context.Context, sessionId string) error {
+	if err := uc.authRepo.RevokeSessionById(ctx, sessionId); err != nil {
+		if err != pgx.ErrNoRows {
+			uc.logger.Error("sign-out: revoke session failed", "session_id", sessionId, "error", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (uc *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (*RefreshTokenResponse, error) {
+	session, err := uc.authRepo.GetSessionByRefreshToken(ctx, refreshToken)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrExpiredRefreshToken
+		}
+		return nil, err
+	}
+
+	err = uc.authRepo.RevokeSessionById(ctx, session.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, err := uc.createSessionToken(ctx, session.Kind, session.UserAgent, session.AccountID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RefreshTokenResponse{
+		Token:        accessToken.Token,
+		RefreshToken: accessToken.RefreshToken,
+		ExpiresInMs:  accessToken.ExpiresInMs,
+	}, nil
+}
+
+func (uc *authUsecase) createSessionToken(ctx context.Context, kind, userAgent string, accountId *string) (*AccessToken, error) {
+	// create session with refresh token
+	session, err := NewSession(&uc.cfg.Auth, userAgent, accountId)
+	if err != nil {
+		return nil, err
+	}
+
+	var sessionId string
+	if kind == "guest" {
+		sessionId, err = uc.authRepo.CreateGuestSession(ctx, session)
+	} else {
+		sessionId, err = uc.authRepo.CreateUserSession(ctx, session)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, exp, err := security.NewAccessToken(uc.cfg.Auth.JWTSecret, uc.cfg.Auth.JWTAccessTTL, sessionId, kind, accountId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AccessToken{
+		Token:        accessToken,
 		RefreshToken: session.RefreshTokenHash,
 		ExpiresInMs:  time.Until(exp).Milliseconds(),
 	}, nil

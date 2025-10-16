@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/rizkyharahap/swimo/pkg/logger"
+	"github.com/rizkyharahap/swimo/pkg/middleware"
 	"github.com/rizkyharahap/swimo/pkg/response"
 )
 
@@ -32,37 +33,30 @@ func NewAuthHandler(logger *logger.Logger, authUsecase AuthUsecase) *AuthHandler
 // @Failure 500 {object} response.Error "Internal server error"
 // @Router /sign-up [post]
 func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	// Parse request body
 	var req SignUpRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response.Error{Message: "Invalid request body"})
+		response.BadRequest(w)
 		return
 	}
 
 	// Validate request DTO
 	if err := req.Validate(); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(response.Error{Message: "Validation errors", Errors: err.Errors})
+		response.ValidationError(w, err.Errors)
 		return
 	}
 
 	if err := h.authUsecase.SignUp(r.Context(), req); err != nil {
 		if errors.Is(err, ErrAccountExists) {
-			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(response.Error{Message: "Email already exists"})
+			response.JSON(w, http.StatusConflict, response.Error{Message: "Email already exists"})
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response.Error{Message: "Internal server error"})
+		response.InternalError(w)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response.Success{Message: "User registered successfully"})
+	response.JSON(w, http.StatusCreated, response.Success{Message: "User registered successfully"})
 }
 
 // SignIn handles user sign in
@@ -80,20 +74,16 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} response.Error "Internal server error"
 // @Router /sign-in [post]
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	// Parse request body
 	var req SignInRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response.Error{Message: "Invalid request body"})
+		response.BadRequest(w)
 		return
 	}
 
 	// Validate request DTO
 	if err := req.Validate(); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(response.Error{Message: "Validation errors", Errors: err.Errors})
+		response.ValidationError(w, err.Errors)
 		return
 	}
 
@@ -101,24 +91,20 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidCreds):
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response.Error{Message: "Invalid Email or Password"})
+			response.JSON(w, http.StatusUnauthorized, response.Error{Message: "Invalid Email or Password"})
 			return
 
 		case errors.Is(err, ErrLocked):
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(response.Error{Message: "Your account has been locked"})
+			response.JSON(w, http.StatusForbidden, response.Error{Message: "Your account has been locked"})
 			return
 
 		default:
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response.Error{Message: "Internal server error"})
+			response.InternalError(w)
 			return
 		}
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response.Success{Data: data, Message: "Sign-in successful"})
+	response.JSON(w, http.StatusOK, response.Success{Data: data, Message: "Sign-in successful"})
 }
 
 // SignIn handles guest sign in
@@ -135,20 +121,17 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} response.Error "Internal server error"
 // @Router /sign-in-guest [post]
 func (h *AuthHandler) SignInGuest(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
 	// Parse request body
 	var req SignInGuestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response.Error{Message: "Invalid request body"})
+		response.BadRequest(w)
 		return
 	}
 
 	// Validate request DTO
 	if err := req.Validate(); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(response.Error{Message: "Validation errors", Errors: err.Errors})
+		response.ValidationError(w, err.Errors)
 		return
 	}
 
@@ -156,22 +139,79 @@ func (h *AuthHandler) SignInGuest(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrGuestDisabled):
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(response.Error{Message: "Guest sign-in is currently disabled"})
+			response.JSON(w, http.StatusForbidden, response.Error{Message: "Guest sign-in is currently disabled"})
 			return
 
 		case errors.Is(err, ErrGuestLimited):
-			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(response.Error{Message: "Guest session limit reached"})
+			response.JSON(w, http.StatusTooManyRequests, response.Error{Message: "Guest session limit reached"})
 			return
 
 		default:
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response.Error{Message: "Internal server error"})
+			response.InternalError(w)
 			return
 		}
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response.Success{Data: data, Message: "Sign-in as guest successful"})
+	response.JSON(w, http.StatusOK, response.Success{Data: data, Message: "Sign-in as guest successful"})
+}
+
+// SignOut handles user sign out
+// @Summary Sign out user
+// @Description Revoke user session and invalidate JWT tokens
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Success "Successfully signed out"
+// @Failure 401 {object} response.Error "Unauthorized - invalid or missing token"
+// @Failure 500 {object} response.Error "Internal server error"
+// @Security ApiKeyAuth
+// @Router /sign-out [post]
+func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claim := middleware.AuthFromContext(ctx)
+
+	if err := h.authUsecase.SignOut(ctx, claim.SessionID); err != nil {
+		response.InternalError(w)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.Success{Message: "Sign-out successful"})
+}
+
+// RefreshToken handles JWT token refresh
+// @Summary Refresh JWT token
+// @Description Generate new access token using refresh token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body auth.RefreshTokenRequest true "Refresh token request"
+// @Success 200 {object} response.Success "Token refreshed successfully"
+// @Failure 401 {object} response.Error "Invalid or expired refresh token"
+// @Failure 500 {object} response.Error "Internal server error"
+// @Security ApiKeyAuth
+// @Router /refresh-token [post]
+func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	var req RefreshTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.ValidationError(w, err.Error())
+		return
+	}
+
+	data, err := h.authUsecase.RefreshToken(r.Context(), req.RefreshToken)
+	if err != nil {
+		if errors.Is(err, ErrExpiredRefreshToken) {
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+
+			// Encode and send the response
+			json.NewEncoder(w).Encode(response.Error{Message: "Invalid or expired refresh token"})
+			return
+		}
+
+		response.InternalError(w)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.Success{Data: data, Message: "Token refreshed successfully"})
 }

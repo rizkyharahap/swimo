@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Go App",
+            "name": "Debug Swimo API",
             "type": "go",
             "request": "launch",
             "mode": "debug",

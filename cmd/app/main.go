@@ -61,7 +61,7 @@ func main() {
 	dbManager := database.NewManager(log)
 
 	// Set up database connection
-	db, err := dbManager.Connect(context.Background(), "primary", &cfg.Database)
+	db, err := dbManager.Connect(context.Background(), "primary", &cfg.Database, &cfg.App)
 	if err != nil {
 		log.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
@@ -83,7 +83,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Setup routes
-	setupRoutes(mux, db, healthHandler, authHandler)
+	setupRoutes(mux, db, cfg, healthHandler, authHandler)
 
 	// Apply middlewares
 	handler := middleware.Chain(
@@ -111,6 +111,7 @@ func main() {
 func setupRoutes(
 	mux *http.ServeMux,
 	db *database.Database,
+	cfg *config.Config,
 	healthHandler *health.HealthHandler,
 	authHandler *auth.AuthHandler,
 ) {
@@ -128,12 +129,21 @@ func setupRoutes(
 		httpSwagger.DomID("swagger-ui"),
 	))
 
+	// Health check endpoint
 	mux.HandleFunc("GET /api/v1/healthz", healthHandler.Check)
 
-	// Auth endpoints
 	if db != nil {
+		// Public endpoints - no authentication required
 		mux.HandleFunc("POST /api/v1/sign-up", authHandler.SignUp)
 		mux.HandleFunc("POST /api/v1/sign-in", authHandler.SignIn)
 		mux.HandleFunc("POST /api/v1/sign-in-guest", authHandler.SignInGuest)
+		mux.HandleFunc("POST /api/v1/refresh-token", authHandler.RefreshToken)
+
+		// Protected endpoints - require authentication
+		authMiddleware := func(h http.HandlerFunc) http.Handler {
+			return middleware.AuthMiddleware(cfg.Auth.JWTSecret, h)
+		}
+
+		mux.Handle("POST /api/v1/sign-out", authMiddleware(authHandler.SignOut))
 	}
 }

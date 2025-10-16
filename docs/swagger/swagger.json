@@ -1,6 +1,15 @@
 {
     "basePath": "/api/v1",
     "definitions": {
+        "auth.RefreshTokenRequest": {
+            "properties": {
+                "refreshToken": {
+                    "example": "deadc0de1234567890",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "auth.SignInGuestRequest": {
             "properties": {
                 "age": {
@@ -163,7 +172,9 @@
         "/healthz": {
             "get": {
                 "description": "Check API and database connectivity",
-                "produces": ["application/json"],
+                "produces": [
+                    "application/json"
+                ],
                 "responses": {
                     "200": {
                         "description": "Service healthy"
@@ -173,12 +184,87 @@
                     }
                 },
                 "summary": "Health Check",
-                "tags": ["Monitoring"]
+                "tags": [
+                    "Monitoring"
+                ]
+            }
+        },
+        "/refresh-token": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "description": "Generate new access token using refresh token",
+                "parameters": [
+                    {
+                        "description": "Refresh token request",
+                        "in": "body",
+                        "name": "request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully",
+                        "examples": {
+                            "application/json": {
+                                "data": {
+                                    "expiresIn": 900000,
+                                    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwidHlwZSI6InJlZnJlc2giLCJleHAiOjE1NjIzOTAyMn0.Vu6l8mHqZ8r6XxR2nV9f6Lk8pO6Lg7pO",
+                                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZXhwIjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                                },
+                                "message": "Token refreshed successfully"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Success"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired refresh token",
+                        "examples": {
+                            "application/json": {
+                                "message": "Expired refresh token"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "examples": {
+                            "application/json": {
+                                "message": "Internal server error"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "summary": "Refresh JWT token",
+                "tags": [
+                    "Auth"
+                ]
             }
         },
         "/sign-in": {
             "post": {
-                "consumes": ["application/json"],
+                "consumes": [
+                    "application/json"
+                ],
                 "description": "Authenticate user with email and password, returns JWT tokens",
                 "parameters": [
                     {
@@ -191,7 +277,9 @@
                         }
                     }
                 ],
-                "produces": ["application/json"],
+                "produces": [
+                    "application/json"
+                ],
                 "responses": {
                     "200": {
                         "description": "Sign in successful",
@@ -272,12 +360,16 @@
                     }
                 },
                 "summary": "Sign in user",
-                "tags": ["Auth"]
+                "tags": [
+                    "Auth"
+                ]
             }
         },
         "/sign-in-guest": {
             "post": {
-                "consumes": ["application/json"],
+                "consumes": [
+                    "application/json"
+                ],
                 "description": "Authenticate guest user without credentials, returns limited access tokens",
                 "parameters": [
                     {
@@ -290,20 +382,22 @@
                         }
                     }
                 ],
-                "produces": ["application/json"],
+                "produces": [
+                    "application/json"
+                ],
                 "responses": {
                     "200": {
                         "description": "Guest sign in successful",
                         "examples": {
                             "application/json": {
                                 "data": {
-                                    "name": "Guest",
                                     "age": 30,
+                                    "expiresIn": 1799999,
                                     "height": 180,
-                                    "weight": 75.5,
-                                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJLaW5kIjoiZ3Vlc3QiLCJTZXNzaW9uSUQiOiJjMGJlODI1ZS02ZmZkLTRhNTgtOTVjYy00MDRkODQ2Njk5OGYiLCJTdWIiOiIiLCJJc3N1ZWRBdCI6MTc2MDU5ODU2NCwiRXhwaXJlc0F0IjoxNzYwNjAwMzY0fQ.KY0Q-Ws9B_-2QgPeNGwkLUrbrPwsR7_5kERUGnJkZqY",
+                                    "name": "Guest",
                                     "refreshToken": "a065443670df3b9aec28d9c7e5e4b6b9de1d70a877954f26aef5c470437b81a3",
-                                    "expiresIn": 1799999
+                                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJLaW5kIjoiZ3Vlc3QiLCJTZXNzaW9uSUQiOiJjMGJlODI1ZS02ZmZkLTRhNTgtOTVjYy00MDRkODQ2Njk5OGYiLCJTdWIiOiIiLCJJc3N1ZWRBdCI6MTc2MDU5ODU2NCwiRXhwaXJlc0F0IjoxNzYwNjAwMzY0fQ.KY0Q-Ws9B_-2QgPeNGwkLUrbrPwsR7_5kERUGnJkZqY",
+                                    "weight": 75.5
                                 },
                                 "message": "Guest sign in successful"
                             }
@@ -359,12 +453,71 @@
                 },
                 "security": [],
                 "summary": "Sign in guest",
-                "tags": ["Auth"]
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/sign-out": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "description": "Revoke user session and invalidate JWT tokens",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully signed out",
+                        "examples": {
+                            "application/json": {
+                                "message": "Sign-out successful"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Success"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid or missing token",
+                        "examples": {
+                            "application/json": {
+                                "message": "Unauthorized"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "examples": {
+                            "application/json": {
+                                "message": "Internal server error"
+                            }
+                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "summary": "Sign out user",
+                "tags": [
+                    "Auth"
+                ]
             }
         },
         "/sign-up": {
             "post": {
-                "consumes": ["application/json"],
+                "consumes": [
+                    "application/json"
+                ],
                 "description": "Register a new user account with email, password, and profile information",
                 "parameters": [
                     {
@@ -377,7 +530,9 @@
                         }
                     }
                 ],
-                "produces": ["application/json"],
+                "produces": [
+                    "application/json"
+                ],
                 "responses": {
                     "201": {
                         "description": "User registered successfully",
@@ -439,7 +594,9 @@
                     }
                 },
                 "summary": "Sign up new user",
-                "tags": ["Auth"]
+                "tags": [
+                    "Auth"
+                ]
             }
         }
     },

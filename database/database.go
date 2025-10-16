@@ -3,8 +3,12 @@ package database
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"sync"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rizkyharahap/swimo/config"
 	"github.com/rizkyharahap/swimo/pkg/logger"
@@ -26,6 +30,59 @@ type Manager struct {
 	mu        sync.RWMutex
 }
 
+type pgxTracer struct {
+	log *logger.Logger
+}
+
+func (t pgxTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	fullQuery := buildFullQuery(data.SQL, data.Args)
+	t.log.Debug("[PGX] QUERY START", "sql", fullQuery)
+	return ctx
+}
+
+func (t pgxTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+	if data.Err != nil {
+		t.log.Error("PGX QUERY ERROR", "err", data.Err)
+	} else {
+		t.log.Debug("PGX QUERY END", "duration", data.CommandTag.String())
+	}
+}
+
+// buildFullQuery safely substitutes $1, $2... placeholders with real argument values
+func buildFullQuery(sql string, args []any) string {
+	result := sql
+
+	for i, arg := range args {
+		placeholder := fmt.Sprintf(`\$%d`, i+1)
+		var replacement string
+
+		switch v := arg.(type) {
+		case string:
+			replacement = fmt.Sprintf("'%s'", escapeQuotes(v))
+		case []byte:
+			replacement = fmt.Sprintf("'%x'", v)
+		case time.Time:
+			replacement = fmt.Sprintf("'%s'", v.Format(time.RFC3339))
+		case nil:
+			replacement = "NULL"
+		default:
+			replacement = fmt.Sprintf("%v", v)
+		}
+
+		result = regexp.MustCompile(placeholder).ReplaceAllString(result, replacement)
+	}
+
+	// Clean multiple spaces & newlines
+	result = strings.ReplaceAll(result, "\n", " ")
+	result = strings.Join(strings.Fields(result), " ")
+	return result
+}
+
+// escapeQuotes escapes single quotes to prevent broken SQL logs
+func escapeQuotes(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
+}
+
 // NewManager creates a new database manager
 func NewManager(logger *logger.Logger) *Manager {
 	return &Manager{
@@ -35,7 +92,7 @@ func NewManager(logger *logger.Logger) *Manager {
 }
 
 // Connect connects to a database with the given name and config
-func (m *Manager) Connect(ctx context.Context, name string, config *config.DatabaseConfig) (*Database, error) {
+func (m *Manager) Connect(ctx context.Context, name string, config *config.DatabaseConfig, appConfig *config.AppConfig) (*Database, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -55,6 +112,10 @@ func (m *Manager) Connect(ctx context.Context, name string, config *config.Datab
 	poolConfig.MinConns = config.MinConns
 	poolConfig.MaxConnLifetime = config.MaxConnLifetime
 	poolConfig.MaxConnIdleTime = config.MaxConnIdleTime
+
+	if appConfig.Env == "dev" {
+		poolConfig.ConnConfig.Tracer = pgxTracer{log: m.logger}
+	}
 
 	// Create connection pool
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
