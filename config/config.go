@@ -21,6 +21,7 @@ type (
 	AppConfig struct {
 		Name string
 		Env  string // dev|staging|prod
+		Host string
 	}
 
 	LogConfig struct {
@@ -92,6 +93,7 @@ func Parse() *Config {
 	app := AppConfig{
 		Name: os.Getenv("APP_NAME"),
 		Env:  os.Getenv("APP_ENV"),
+		Host: os.Getenv("APP_HOST"),
 	}
 
 	log := LogConfig{
