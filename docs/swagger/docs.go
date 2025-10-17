@@ -72,40 +72,26 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Token refreshed successfully",
-                        "examples": {
-                            "application/json": {
-                                "data": {
-                                    "expiresIn": 900000,
-                                    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwidHlwZSI6InJlZnJlc2giLCJleHAiOjE1NjIzOTAyMn0.Vu6l8mHqZ8r6XxR2nV9f6Lk8pO6Lg7pO",
-                                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZXhwIjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-                                },
-                                "message": "Token refreshed successfully"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Success"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/auth.RefreshTokenResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Invalid or expired refresh token",
-                        "examples": {
-                            "application/json": {
-                                "message": "Expired refresh token"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "examples": {
-                            "application/json": {
-                                "message": "Internal server error"
-                            }
-                        },
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     }
                 }
@@ -138,81 +124,44 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Sign in successful",
-                        "examples": {
-                            "application/json": {
-	                            "data": {
-		                            "name": "John Doe",
-		                            "email": "john@example.com",
-		                            "age": 30,
-		                            "height": 180,
-		                            "weight": 75.5,
-		                            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJTdWIiOiJjN2JkZTQ2YS0zZjUxLTQ2MTUtOWIxZi0zYzM5ZWE3ZjJiZDUiLCJBaWQiOiI1OTU4N2JhMi1kY2NmLTRiNTItODdiNC1hODM2MWY3MWIzZmQiLCJVaWQiOiJlYzA3ZDg5MC03NmY4LTRlZjEtOWM2YS02NzU2NzBiNTZiM2UiLCJLaW5kIjoidXNlciIsIklhdCI6MTc2MDcwNTg5NiwiRXhwIjoxNzYwNzA3Njk2fQ.eTo6rztLAYqWfGXvy-cwa-wtr6psc78CEwDWhCqMqps",
-		                            "refreshToken": "3d3dc788634e05b7d1d5fac06834d3b6a9b628bdde24c361eec1981c1b75bd57",
-		                            "expiresIn": 1799999
-		                            },
-	                            "message": "Sign-in successful"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Success"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/auth.SignInResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Invalid request body",
-                        "examples": {
-                            "application/json": {
-                                "message": "Invalid JSON Body"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     },
                     "401": {
-                        "description": "Invalid credentials",
-                        "examples": {
-                            "application/json": {
-                                "message": "Invalid email or password"
-                            }
-                        },
+                        "description": "Invalid email or password",
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     },
                     "422": {
                         "description": "Validation errors",
-                        "examples": {
-                            "application/json": {
-                                "errors": {
-                                    "email": "Email is not a valid format"
-                                },
-                                "message": "Validation Error"
-                            }
-                        },
                         "schema": {
                             "$ref": "#/definitions/response.Error"
                         }
                     },
                     "423": {
-                        "description": "Account locked",
-                        "examples": {
-                            "application/json": {
-                                "message": "Account has been locked"
-                            }
-                        },
+                        "description": "Your account has been locked",
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "examples": {
-                            "application/json": {
-                                "message": "Internal server error"
-                            }
-                        },
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     }
                 }
@@ -245,65 +194,44 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Guest sign in successful",
-                        "examples": {
-                            "application/json": {
-                                "data": {
-                                    "age": 30,
-                                    "expiresIn": 1799999,
-                                    "height": 180,
-                                    "name": "Guest",
-                                    "refreshToken": "a065443670df3b9aec28d9c7e5e4b6b9de1d70a877954f26aef5c470437b81a3",
-                                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJLaW5kIjoiZ3Vlc3QiLCJTZXNzaW9uSUQiOiJjMGJlODI1ZS02ZmZkLTRhNTgtOTVjYy00MDRkODQ2Njk5OGYiLCJTdWIiOiIiLCJJc3N1ZWRBdCI6MTc2MDU5ODU2NCwiRXhwaXJlc0F0IjoxNzYwNjAwMzY0fQ.KY0Q-Ws9B_-2QgPeNGwkLUrbrPwsR7_5kERUGnJkZqY"
-                                },
-                                "message": "Guest sign in successful"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Success"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/auth.SignInGuestResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Invalid request body",
-                        "examples": {
-                            "application/json": {
-                                "message": "Invalid JSON Body"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     },
                     "403": {
                         "description": "Guest sign in disabled",
-                        "examples": {
-                            "application/json": {
-                                "message": "Guest sign in is currently disabled"
-                            }
-                        },
+                        "schema": {
+                            "$ref": "#/definitions/response.Message"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
                         "schema": {
                             "$ref": "#/definitions/response.Error"
                         }
                     },
                     "429": {
                         "description": "Guest session limit reached",
-                        "examples": {
-                            "application/json": {
-                                "message": "Guest session limit reached"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "examples": {
-                            "application/json": {
-                                "message": "Internal server error"
-                            }
-                        },
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     }
                 }
@@ -329,42 +257,15 @@ const docTemplate = `{
                 "summary": "Sign out user",
                 "responses": {
                     "200": {
-                        "description": "Successfully signed out",
-                        "examples": {
-                            "application/json": {
-                                "message": "Sign-out successful"
-                            }
-                        },
+                        "description": "Sign out successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.Success"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - invalid or missing token",
-                        "examples": {
-                            "application/json": {
-                                "message": "Unauthorized"
-                            }
-                        },
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "examples": {
-                            "application/json": {
-                                "message": "Internal server error"
-                            }
-                        },
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     }
                 }
             }
         },
-            "/sign-up": {
+        "/sign-up": {
             "post": {
                 "description": "Register a new user account with email, password, and profile information",
                 "consumes": [
@@ -391,58 +292,24 @@ const docTemplate = `{
                 "responses": {
                     "201": {
                         "description": "User registered successfully",
-                        "examples": {
-                            "application/json": {
-                                "message": "User registered successfully"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Success"
+                            "$ref": "#/definitions/response.Message"
                         }
                     },
                     "400": {
                         "description": "Invalid request body",
-                        "examples": {
-                            "application/json": {
-                                "message": "Invalid JSON Body"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     },
                     "409": {
                         "description": "Email already exists",
-                        "examples": {
-                            "application/json": {
-                                "message": "Email already exists"
-                            }
-                        },
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     },
                     "422": {
                         "description": "Validation errors",
-                        "examples": {
-                            "application/json": {
-                                "errors": {
-                                    "email": "Email is not a valid format"
-                                },
-                                "message": "Validation Error"
-                            }
-                        },
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "examples": {
-                            "application/json": {
-                                "message": "Internal server error"
-                            }
-                        },
                         "schema": {
                             "$ref": "#/definitions/response.Error"
                         }
@@ -471,19 +338,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Last training session retrieved successfully",
-                        "examples": {
-                            "application/json": {
-                                "data": {
-                                    "distance": 1500,
-                                    "id": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
-                                    "pace": 1.2,
-                                    "time": 1800,
-                                    "trainingId": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
-                                    "userId": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
-                                },
-                                "message": "Last training session retrieved successfully"
-                            }
-                        },
                         "schema": {
                             "allOf": [
                                 {
@@ -500,22 +354,10 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
                     "404": {
                         "description": "No training sessions found",
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     }
                 }
@@ -552,23 +394,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Training retrieved successfully",
-                        "examples": {
-                            "application/json": {
-                                "data": {
-                                    "calories": 120,
-                                    "categoryCode": "BREASTSTROKE",
-                                    "content": "<p>HTML content here</p>",
-                                    "descriptions": "Short description about this training",
-                                    "id": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
-                                    "level": "beginner",
-                                    "name": "Breaststroke Basics",
-                                    "thumbnailUrl": "https://cdn.example.com/thumbs/breaststroke.png",
-                                    "time": "10-15 min",
-                                    "videoUrl": "https://cdn.example.com/videos/breaststroke.mp4"
-                                },
-                                "message": "Training retrieved successfully"
-                            }
-                        },
                         "schema": {
                             "allOf": [
                                 {
@@ -585,22 +410,10 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
                     "404": {
                         "description": "Training not found",
                         "schema": {
-                            "$ref": "#/definitions/response.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Error"
+                            "$ref": "#/definitions/response.Message"
                         }
                     }
                 }
@@ -613,7 +426,24 @@ const docTemplate = `{
             "properties": {
                 "refreshToken": {
                     "type": "string",
-                    "example": "deadc0de1234567890"
+                    "example": "3d3dc788634e05b7d1d5fac06834d3b6a9b62..."
+                }
+            }
+        },
+        "auth.RefreshTokenResponse": {
+            "type": "object",
+            "properties": {
+                "expiresInMs": {
+                    "type": "integer",
+                    "example": 1799999
+                },
+                "refreshToken": {
+                    "type": "string",
+                    "example": "3d3dc788634e05b7d1d5fac06834d3b6a9b62..."
+                },
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 }
             }
         },
@@ -634,6 +464,39 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.SignInGuestResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "expiresIn": {
+                    "type": "integer",
+                    "example": 1799999
+                },
+                "height": {
+                    "type": "number",
+                    "example": 180
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "refreshToken": {
+                    "type": "string",
+                    "example": "3d3dc788634e05b7d1d5fac06834d3b6a9b62..."
+                },
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "weight": {
+                    "type": "number",
+                    "example": 75.5
+                }
+            }
+        },
         "auth.SignInRequest": {
             "type": "object",
             "properties": {
@@ -644,6 +507,43 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "example": "SecurePassword123"
+                }
+            }
+        },
+        "auth.SignInResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "email": {
+                    "type": "string",
+                    "example": "john@example.com"
+                },
+                "expiresIn": {
+                    "type": "integer",
+                    "example": 1799999
+                },
+                "height": {
+                    "type": "number",
+                    "example": 180
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "refreshToken": {
+                    "type": "string",
+                    "example": "3d3dc788634e05b7d1d5fac06834d3b6a9b62..."
+                },
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "weight": {
+                    "type": "number",
+                    "example": 75.5
                 }
             }
         },
@@ -683,7 +583,20 @@ const docTemplate = `{
         "response.Error": {
             "type": "object",
             "properties": {
-                "errors": {},
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Message": {
+            "type": "object",
+            "properties": {
                 "message": {
                     "type": "string"
                 }
@@ -692,10 +605,7 @@ const docTemplate = `{
         "response.Success": {
             "type": "object",
             "properties": {
-                "data": {},
-                "message": {
-                    "type": "string"
-                }
+                "data": {}
             }
         },
         "training.TrainingResponse": {

@@ -23,9 +23,7 @@ func NewTrainingHandler(trainingUseCase TrainingUsecase) *TrainingHandler {
 // @Produce json
 // @Param id path string true "Training ID" example("8c4a2d27-56e2-4ef3-8a6e-43b812345abc")
 // @Success 200 {object} response.Success{data=TrainingResponse} "Training retrieved successfully"
-// @Failure 401 {object} response.Error "Unauthorized"
-// @Failure 404 {object} response.Error "Training not found"
-// @Failure 500 {object} response.Error "Internal server error"
+// @Failure 404 {object} response.Message "Training not found"
 // @Security ApiKeyAuth
 // @Router /training/{id} [get]
 func (h *TrainingHandler) GetById(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +32,7 @@ func (h *TrainingHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	training, err := h.trainingUseCase.GetById(r.Context(), id)
 	if err != nil {
 		if err == ErrTrainingNotFound {
-			response.JSON(w, http.StatusNotFound, response.Error{Message: "Training not found"})
+			response.JSON(w, http.StatusNotFound, response.Message{Message: "Training not found"})
 			return
 		}
 
@@ -52,9 +50,7 @@ func (h *TrainingHandler) GetById(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.Success{data=TrainingSessionResponse} "Last training session retrieved successfully"
-// @Failure 404 {object} response.Error "No training sessions found"
-// @Failure 401 {object} response.Error "Unauthorized"
-// @Failure 500 {object} response.Error "Internal server error"
+// @Failure 404 {object} response.Message "No training sessions found"
 // @Security ApiKeyAuth
 // @Router /training/last [get]
 func (h *TrainingHandler) GetLastTraining(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +60,7 @@ func (h *TrainingHandler) GetLastTraining(w http.ResponseWriter, r *http.Request
 	trainingSession, err := h.trainingUseCase.GetLastTraining(ctx, *claim.Uid)
 	if err != nil {
 		if err == ErrTrainingSessionNotFound {
-			response.JSON(w, http.StatusNotFound, response.Error{Message: "No training sessions found"})
+			response.JSON(w, http.StatusNotFound, response.Message{Message: "No training sessions found"})
 			return
 		}
 

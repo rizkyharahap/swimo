@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -18,26 +17,20 @@ func AuthMiddleware(secret string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response.Error{Message: "Missing Authorization header"})
+			response.JSON(w, http.StatusUnauthorized, response.Message{Message: "Missing Authorization header"})
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response.Error{Message: "Invalid Authorization format"})
+			response.JSON(w, http.StatusUnauthorized, response.Message{Message: "Invalid Authorization format"})
 			return
 		}
 
 		token := parts[1]
 		claims, err := security.VerifyJWT(token, secret)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response.Error{Message: "Invalid or expired token"})
+			response.JSON(w, http.StatusUnauthorized, response.Message{Message: "Invalid or expired token"})
 			return
 		}
 

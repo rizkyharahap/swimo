@@ -24,11 +24,10 @@ func NewAuthHandler(authUsecase AuthUsecase) *AuthHandler {
 // @Accept json
 // @Produce json
 // @Param request body SignUpRequest true "Sign up request with user details"
-// @Success 201 {object} response.Success "User registered successfully"
-// @Failure 400 {object} response.Error "Invalid request body"
+// @Success 201 {object} response.Message "User registered successfully"
+// @Failure 400 {object} response.Message "Invalid request body"
 // @Failure 422 {object} response.Error "Validation errors"
-// @Failure 409 {object} response.Error "Email already exists"
-// @Failure 500 {object} response.Error "Internal server error"
+// @Failure 409 {object} response.Message "Email already exists"
 // @Router /sign-up [post]
 func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
@@ -46,7 +45,7 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.authUsecase.SignUp(r.Context(), req); err != nil {
 		if errors.Is(err, ErrAccountExists) {
-			response.JSON(w, http.StatusConflict, response.Error{Message: "Email already exists"})
+			response.JSON(w, http.StatusConflict, response.Message{Message: "Email already exists"})
 			return
 		}
 
@@ -54,7 +53,7 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusCreated, response.Success{Message: "User registered successfully"})
+	response.JSON(w, http.StatusCreated, response.Message{Message: "User registered successfully"})
 }
 
 // SignIn handles user sign in
@@ -64,12 +63,11 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param request body SignInRequest true "Sign in request with user credentials"
-// @Success 200 {object} response.Success "Sign in successful"
-// @Failure 400 {object} response.Error "Invalid request body"
-// @Failure 401 {object} response.Error "Invalid credentials"
+// @Success 200 {object} response.Success{data=SignInResponse} "Sign in successful"
+// @Failure 400 {object} response.Message "Invalid request body"
+// @Failure 401 {object} response.Message "Invalid email or password"
 // @Failure 422 {object} response.Error "Validation errors"
-// @Failure 423 {object} response.Error "Account locked"
-// @Failure 500 {object} response.Error "Internal server error"
+// @Failure 423 {object} response.Message "Your account has been locked"
 // @Router /sign-in [post]
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
@@ -89,11 +87,11 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidCreds):
-			response.JSON(w, http.StatusUnauthorized, response.Error{Message: "Invalid Email or Password"})
+			response.JSON(w, http.StatusUnauthorized, response.Message{Message: "Invalid email or password"})
 			return
 
 		case errors.Is(err, ErrLocked):
-			response.JSON(w, http.StatusForbidden, response.Error{Message: "Your account has been locked"})
+			response.JSON(w, http.StatusForbidden, response.Message{Message: "Your account has been locked"})
 			return
 
 		default:
@@ -102,7 +100,7 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	response.JSON(w, http.StatusOK, response.Success{Data: data, Message: "Sign-in successful"})
+	response.JSON(w, http.StatusOK, response.Success{Data: data})
 }
 
 // SignIn handles guest sign in
@@ -112,11 +110,11 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param request body SignInGuestRequest true "Guest sign in request with optional user agent"
-// @Success 200 {object} response.Success "Guest sign in successful"
-// @Failure 400 {object} response.Error "Invalid request body"
-// @Failure 403 {object} response.Error "Guest sign in disabled"
-// @Failure 429 {object} response.Error "Guest session limit reached"
-// @Failure 500 {object} response.Error "Internal server error"
+// @Success 200 {object} response.Success{data=SignInGuestResponse} "Guest sign in successful"
+// @Failure 400 {object} response.Message "Invalid request body"
+// @Failure 403 {object} response.Message "Guest sign in disabled"
+// @Failure 422 {object} response.Error "Validation errors"
+// @Failure 429 {object} response.Message "Guest session limit reached"
 // @Router /sign-in-guest [post]
 func (h *AuthHandler) SignInGuest(w http.ResponseWriter, r *http.Request) {
 
@@ -137,11 +135,11 @@ func (h *AuthHandler) SignInGuest(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrGuestDisabled):
-			response.JSON(w, http.StatusForbidden, response.Error{Message: "Guest sign-in is currently disabled"})
+			response.JSON(w, http.StatusForbidden, response.Message{Message: "Guest sign in disabled"})
 			return
 
 		case errors.Is(err, ErrGuestLimited):
-			response.JSON(w, http.StatusTooManyRequests, response.Error{Message: "Guest session limit reached"})
+			response.JSON(w, http.StatusTooManyRequests, response.Message{Message: "Guest session limit reached"})
 			return
 
 		default:
@@ -150,7 +148,7 @@ func (h *AuthHandler) SignInGuest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	response.JSON(w, http.StatusOK, response.Success{Data: data, Message: "Sign-in as guest successful"})
+	response.JSON(w, http.StatusOK, response.Success{Data: data})
 }
 
 // SignOut handles user sign out
@@ -159,9 +157,7 @@ func (h *AuthHandler) SignInGuest(w http.ResponseWriter, r *http.Request) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.Success "Successfully signed out"
-// @Failure 401 {object} response.Error "Unauthorized - invalid or missing token"
-// @Failure 500 {object} response.Error "Internal server error"
+// @Success 200 {object} response.Message "Sign out successfully"
 // @Security ApiKeyAuth
 // @Router /sign-out [post]
 func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +169,7 @@ func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, response.Success{Message: "Sign-out successful"})
+	response.JSON(w, http.StatusOK, response.Message{Message: "Sign out successfully"})
 }
 
 // RefreshToken handles JWT token refresh
@@ -183,27 +179,27 @@ func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param request body auth.RefreshTokenRequest true "Refresh token request"
-// @Success 200 {object} response.Success "Token refreshed successfully"
-// @Failure 401 {object} response.Error "Invalid or expired refresh token"
-// @Failure 500 {object} response.Error "Internal server error"
+// @Success 200 {object} response.Success{data=RefreshTokenResponse} "Token refreshed successfully"
+// @Failure 401 {object} response.Message "Invalid or expired refresh token"
 // @Security ApiKeyAuth
 // @Router /refresh-token [post]
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var req RefreshTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ValidationError(w, err.Error())
+		response.BadRequest(w)
+		return
+	}
+
+	// Validate request DTO
+	if err := req.Validate(); err != nil {
+		response.ValidationError(w, err.Errors)
 		return
 	}
 
 	data, err := h.authUsecase.RefreshToken(r.Context(), req.RefreshToken)
 	if err != nil {
 		if errors.Is(err, ErrExpiredRefreshToken) {
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-
-			// Encode and send the response
-			json.NewEncoder(w).Encode(response.Error{Message: "Invalid or expired refresh token"})
+			response.JSON(w, http.StatusUnauthorized, response.Message{Message: "Invalid or expired refresh token"})
 			return
 		}
 
@@ -211,5 +207,5 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, response.Success{Data: data, Message: "Token refreshed successfully"})
+	response.JSON(w, http.StatusOK, response.Success{Data: data})
 }

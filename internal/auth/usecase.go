@@ -119,7 +119,7 @@ func (uc *authUsecase) SignIn(ctx context.Context, req SignInRequest, userAgent 
 		Weight:       auth.WeightKG,
 		Token:        accessToken.Token,
 		RefreshToken: accessToken.RefreshToken,
-		ExpiresInMs:  accessToken.ExpiresInMs,
+		ExpiresIn:    accessToken.ExpiresInMs,
 	}, nil
 }
 
@@ -149,7 +149,7 @@ func (uc *authUsecase) SignInGuest(ctx context.Context, req SignInGuestRequest, 
 		Age:          req.Age,
 		Token:        accessToken.Token,
 		RefreshToken: accessToken.RefreshToken,
-		ExpiresInMs:  accessToken.ExpiresInMs,
+		ExpiresIn:    accessToken.ExpiresInMs,
 	}, nil
 }
 
@@ -185,7 +185,7 @@ func (uc *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (*
 	return &RefreshTokenResponse{
 		Token:        accessToken.Token,
 		RefreshToken: accessToken.RefreshToken,
-		ExpiresInMs:  accessToken.ExpiresInMs,
+		ExpiresIn:    accessToken.ExpiresInMs,
 	}, nil
 }
 

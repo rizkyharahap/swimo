@@ -31,8 +31,8 @@ type SignInResponse struct {
 	Height       float64 `json:"height" example:"180"`
 	Weight       float64 `json:"weight" example:"75.5"`
 	Token        string  `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	RefreshToken string  `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	ExpiresInMs  int64   `json:"expiresIn" example:"900000"`
+	RefreshToken string  `json:"refreshToken" example:"3d3dc788634e05b7d1d5fac06834d3b6a9b62..."`
+	ExpiresIn    int64   `json:"expiresIn" example:"1799999"`
 }
 
 type SignInGuestRequest struct {
@@ -47,18 +47,18 @@ type SignInGuestResponse struct {
 	Height       float64 `json:"height" example:"180"`
 	Weight       float64 `json:"weight" example:"75.5"`
 	Token        string  `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	RefreshToken string  `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	ExpiresInMs  int64   `json:"expiresIn" example:"900000"`
+	RefreshToken string  `json:"refreshToken" example:"3d3dc788634e05b7d1d5fac06834d3b6a9b62..."`
+	ExpiresIn    int64   `json:"expiresIn" example:"1799999"`
 }
 
 type RefreshTokenRequest struct {
-	RefreshToken string `json:"refreshToken" example:"deadc0de1234567890"`
+	RefreshToken string `json:"refreshToken" example:"3d3dc788634e05b7d1d5fac06834d3b6a9b62..."`
 }
 
 type RefreshTokenResponse struct {
-	Token        string `json:"token"`
-	RefreshToken string `json:"refreshToken"`
-	ExpiresInMs  int64  `json:"expiresInMs"`
+	Token        string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string `json:"refreshToken" example:"3d3dc788634e05b7d1d5fac06834d3b6a9b62..."`
+	ExpiresIn    int64  `json:"expiresInMs" example:"1799999"`
 }
 
 func (r *SignUpRequest) ToUserEntity(accountID string) *User {
@@ -164,6 +164,21 @@ func (r *SignInGuestRequest) Validate() *validator.ValidationError {
 		errors["age"] = "Age is required"
 	} else if r.Age < 0 {
 		errors["age"] = "Age cannot be negative"
+	}
+
+	if len(errors) > 0 {
+		return &validator.ValidationError{Errors: errors}
+	}
+
+	return nil
+}
+
+// Validate validates the sign in guest request
+func (r *RefreshTokenRequest) Validate() *validator.ValidationError {
+	errors := make(map[string]string)
+
+	if r.RefreshToken == "" {
+		errors["refresh_token"] = "Refresh token is required"
 	}
 
 	if len(errors) > 0 {
