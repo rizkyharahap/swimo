@@ -6,7 +6,7 @@ import (
 	"github.com/rizkyharahap/swimo/pkg/validator"
 )
 
-type CreateTrainingRequest struct {
+type TrainingRequest struct {
 	CategoryCode string `json:"categoryCode" example:"BREASTSTROKE"`
 	Level        string `json:"level" example:"beginner"`
 	Name         string `json:"name" example:"Breaststroke Basics"`
@@ -84,7 +84,7 @@ func (q *TrainingsQuery) Validate() *validator.ValidationError {
 	return nil
 }
 
-func (r *CreateTrainingRequest) Validate() error {
+func (r *TrainingRequest) Validate() error {
 	errors := make(map[string]string)
 
 	// CategoryCode

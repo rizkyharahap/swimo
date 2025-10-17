@@ -6,13 +6,19 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var (
+	ErrorTrainingExists = errors.New("training already exists")
 )
 
 type TrainingRepository interface {
 	GetById(ctx context.Context, id string) (*Training, error)
 	GetLastByUserId(ctx context.Context, userID string) (*TrainingSession, error)
 	GetList(ctx context.Context, query *TrainingsQuery) ([]*TrainingItem, int, error)
+	Create(ctx context.Context, training *Training) (*Training, error)
 }
 
 type trainingRepository struct{ db *pgxpool.Pool }
@@ -86,7 +92,7 @@ func (r *trainingRepository) GetLastByUserId(ctx context.Context, userID string)
 func (r *trainingRepository) GetList(ctx context.Context, query *TrainingsQuery) ([]*TrainingItem, int, error) {
 	var (
 		whereQ string
-		args   []interface{}
+		args   []any
 		baseQ  = `
 		SELECT
 			id, level, name, descriptions, time_label, thumbnail_url
@@ -165,4 +171,76 @@ func (r *trainingRepository) GetList(ctx context.Context, query *TrainingsQuery)
 	}
 
 	return trainings, total, nil
+}
+
+func (r *trainingRepository) Create(ctx context.Context, training *Training) (*Training, error) {
+	const q = `
+		WITH cat AS (
+				SELECT id, code, name
+				FROM training_categories
+				WHERE code = $1
+				LIMIT 1
+		),
+		ins AS (
+				INSERT INTO trainings (
+					category_id, level, name, descriptions, time_label,
+					calories_kcal, thumbnail_url, video_url, content_html
+				)
+				SELECT
+					cat.id, $2, $3, $4, $5, $6, $7, $8, $9
+				FROM cat
+				RETURNING
+					id, category_id, level, name, descriptions,
+					time_label, calories_kcal, thumbnail_url, video_url, content_html
+		)
+		SELECT
+				ins.id,
+				cat.code AS category_code,
+				cat.name AS category_name,
+				ins.level,
+				ins.name,
+				ins.descriptions,
+				ins.time_label,
+				ins.calories_kcal,
+				ins.thumbnail_url,
+				ins.video_url,
+				ins.content_html
+		FROM ins
+		JOIN cat ON ins.category_id = cat.id;
+		`
+
+	err := r.db.QueryRow(ctx, q,
+		training.CategoryCode,
+		training.Level,
+		training.Name,
+		training.Descriptions,
+		training.VideoURL,
+		training.CaloriesKcal,
+		training.ThumbnailURL,
+		training.VideoURL,
+		training.ContentHTML,
+	).Scan(
+		&training.ID,
+		&training.CategoryCode,
+		&training.CategoryName,
+		&training.Level,
+		&training.Name,
+		&training.Descriptions,
+		&training.TimeLabel,
+		&training.CaloriesKcal,
+		&training.ThumbnailURL,
+		&training.VideoURL,
+		&training.ContentHTML,
+	)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique_violation
+			return nil, ErrorTrainingExists
+		}
+
+		return nil, err
+	}
+
+	return training, nil
 }

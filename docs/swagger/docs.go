@@ -399,6 +399,67 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create a new training with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Training"
+                ],
+                "summary": "Create a new training",
+                "parameters": [
+                    {
+                        "description": "Training creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/training.TrainingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Training created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/training.TrainingResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "409": {
+                        "description": "Training already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.Message"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                }
             }
         },
         "/trainings/last": {
@@ -408,7 +469,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Retrieve the most recent training session for the authenticated user",
+                "description": "Retrieve the most recent training session",
                 "consumes": [
                     "application/json"
                 ],
@@ -740,6 +801,47 @@ const docTemplate = `{
                 "thumbnailUrl": {
                     "type": "string",
                     "example": "https://cdn.example.com/thumbs/breaststroke.png"
+                }
+            }
+        },
+        "training.TrainingRequest": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "categoryCode": {
+                    "type": "string",
+                    "example": "BREASTSTROKE"
+                },
+                "content": {
+                    "type": "string",
+                    "example": "\u003cp\u003eHTML content here\u003c/p\u003e"
+                },
+                "descriptions": {
+                    "type": "string",
+                    "example": "Dasar gaya dada untuk pemula"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "beginner"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Breaststroke Basics"
+                },
+                "thumbnailUrl": {
+                    "type": "string",
+                    "example": "https://cdn.example.com/thumbs/breaststroke.png"
+                },
+                "time": {
+                    "type": "string",
+                    "example": "10-15 min"
+                },
+                "videoUrl": {
+                    "type": "string",
+                    "example": "https://cdn.example.com/videos/breaststroke.mp4"
                 }
             }
         },

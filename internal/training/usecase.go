@@ -14,6 +14,7 @@ type TrainingUsecase interface {
 	GetById(ctx context.Context, id string) (*TrainingResponse, error)
 	GetLastTraining(ctx context.Context, userId string) (*TrainingSessionResponse, error)
 	GetTrainings(ctx context.Context, query *TrainingsQuery) (trainingItems []TrainingItemResponse, totalPages int, err error)
+	CreateTraining(ctx context.Context, req *TrainingRequest) (*TrainingResponse, error)
 }
 
 type trainingUsecase struct {
@@ -87,4 +88,34 @@ func (u *trainingUsecase) GetTrainings(ctx context.Context, query *TrainingsQuer
 	}
 
 	return trainingItems, totalPages, nil
+}
+
+func (u *trainingUsecase) CreateTraining(ctx context.Context, req *TrainingRequest) (*TrainingResponse, error) {
+	training, err := u.trainingRepo.Create(ctx, &Training{
+		CategoryCode: req.CategoryCode,
+		Level:        req.Level,
+		Name:         req.Name,
+		Descriptions: req.Descriptions,
+		TimeLabel:    req.Time,
+		CaloriesKcal: req.Calories,
+		ThumbnailURL: req.ThumbnailURL,
+		VideoURL:     &req.VideoURL,
+		ContentHTML:  req.Content,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &TrainingResponse{
+		ID:           training.ID,
+		Level:        training.Level,
+		Name:         training.Name,
+		Descriptions: training.Descriptions,
+		Time:         training.TimeLabel,
+		Calories:     training.CaloriesKcal,
+		ThumbnailURL: training.ThumbnailURL,
+		VideoURL:     training.VideoURL,
+		Content:      training.ContentHTML,
+		CategoryCode: training.CategoryCode,
+	}, nil
 }

@@ -1,11 +1,13 @@
 package training
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/rizkyharahap/swimo/pkg/middleware"
 	"github.com/rizkyharahap/swimo/pkg/response"
+	"github.com/rizkyharahap/swimo/pkg/validator"
 )
 
 type TrainingHandler struct {
@@ -146,4 +148,41 @@ func (h *TrainingHandler) GetTrainings(w http.ResponseWriter, r *http.Request) {
 			TotalPages: totalPages,
 		},
 	})
+}
+
+// CreateTraining handles creating a new training
+// @Summary Create a new training
+// @Description Create a new training with the provided details
+// @Tags Training
+// @Accept json
+// @Produce json
+// @Param request body TrainingRequest true "Training creation request"
+// @Success 201 {object} response.Success{data=TrainingResponse} "Training created successfully"
+// @Failure 409 {object} response.Message "Training already exists"
+// @Failure 422 {object} response.Error "Validation errors"
+// @Security ApiKeyAuth
+// @Router /trainings [post]
+func (h *TrainingHandler) CreateTraining(w http.ResponseWriter, r *http.Request) {
+	var req TrainingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		response.ValidationError(w, err.(*validator.ValidationError).Errors)
+		return
+	}
+
+	training, err := h.trainingUseCase.CreateTraining(r.Context(), &req)
+	if err != nil {
+		if err == ErrorTrainingExists {
+			response.JSON(w, http.StatusConflict, response.Message{Message: "Training already exists"})
+			return
+		}
+		response.InternalError(w)
+		return
+	}
+
+	response.JSON(w, http.StatusCreated, response.Success{Data: training})
 }

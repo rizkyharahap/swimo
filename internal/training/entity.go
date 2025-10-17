@@ -19,7 +19,7 @@ type TrainingCategory struct {
 type Training struct {
 	ID           string
 	CategoryCode string
-	CategoryName string
+	CategoryName *string
 	Level        string
 	Name         string
 	Descriptions string
