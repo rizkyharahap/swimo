@@ -73,39 +73,6 @@
             },
             "type": "object"
         },
-        "internal_auth.SignUpRequest": {
-            "properties": {
-                "age": {
-                    "example": 30,
-                    "type": "integer"
-                },
-                "confirmPassword": {
-                    "example": "SecurePassword123",
-                    "type": "string"
-                },
-                "email": {
-                    "example": "john@example.com",
-                    "type": "string"
-                },
-                "height": {
-                    "example": 180,
-                    "type": "number"
-                },
-                "name": {
-                    "example": "John Doe",
-                    "type": "string"
-                },
-                "password": {
-                    "example": "SecurePassword123",
-                    "type": "string"
-                },
-                "weight": {
-                    "example": 75.5,
-                    "type": "number"
-                }
-            },
-            "type": "object"
-        },
         "response.Error": {
             "properties": {
                 "errors": {},
@@ -123,13 +90,86 @@
                 }
             },
             "type": "object"
+        },
+        "training.TrainingResponse": {
+            "properties": {
+                "calories": {
+                    "example": 120,
+                    "type": "integer"
+                },
+                "categoryCode": {
+                    "example": "BREASTSTROKE",
+                    "type": "string"
+                },
+                "content": {
+                    "example": "\u003cp\u003eHTML content here\u003c/p\u003e",
+                    "type": "string"
+                },
+                "descriptions": {
+                    "example": "Short description about this training",
+                    "type": "string"
+                },
+                "id": {
+                    "example": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
+                    "type": "string"
+                },
+                "level": {
+                    "example": "beginner",
+                    "type": "string"
+                },
+                "name": {
+                    "example": "Breaststroke Basics",
+                    "type": "string"
+                },
+                "thumbnailUrl": {
+                    "example": "https://cdn.example.com/thumbs/breaststroke.png",
+                    "type": "string"
+                },
+                "time": {
+                    "example": "10-15 min",
+                    "type": "string"
+                },
+                "videoUrl": {
+                    "example": "https://cdn.example.com/videos/breaststroke.mp4",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "training.TrainingSessionResponse": {
+            "properties": {
+                "distance": {
+                    "example": 1500,
+                    "type": "integer"
+                },
+                "id": {
+                    "example": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
+                    "type": "string"
+                },
+                "pace": {
+                    "example": 1.2,
+                    "type": "number"
+                },
+                "time": {
+                    "example": 1800,
+                    "type": "integer"
+                },
+                "trainingId": {
+                    "example": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
+                    "type": "string"
+                },
+                "userId": {
+                    "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                    "type": "string"
+                }
+            },
+            "type": "object"
         }
     },
     "externalDocs": {
         "description": "Swimo GitHub Repository",
         "url": "https://github.com/rizkyharahap/swimo"
     },
-    "host": "localhost:8080",
     "info": {
         "contact": {},
         "description": "This is the API documentation for Swimo - a swimming management and tracking application.",
@@ -424,7 +464,6 @@
                         }
                     }
                 },
-                "security": [],
                 "summary": "Sign in guest",
                 "tags": [
                     "Auth"
@@ -571,11 +610,150 @@
                     "Auth"
                 ]
             }
+        },
+        "/training/last": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "description": "Retrieve the most recent training session for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Last training session retrieved successfully",
+                        "examples": {
+                            "application/json": {
+                                "data": {
+                                    "distance": 1500,
+                                    "id": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
+                                    "pace": 1.2,
+                                    "time": 1800,
+                                    "trainingId": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
+                                    "userId": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                                },
+                                "message": "Last training session retrieved successfully"
+                            }
+                        },
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/training.TrainingSessionResponse"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "No training sessions found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "summary": "Get user's last training session",
+                "tags": [
+                    "Training"
+                ]
+            }
+        },
+        "/training/{id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "description": "Retrieve detailed training information by training ID",
+                "parameters": [
+                    {
+                        "description": "Training ID",
+                        "example": "\"8c4a2d27-56e2-4ef3-8a6e-43b812345abc\"",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Training retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/training.TrainingResponse"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Training not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "summary": "Get training by ID",
+                "tags": [
+                    "Training"
+                ]
+            }
         }
     },
     "schemes": [
-        "https",
-        "http"
+        "http",
+        "https"
     ],
     "securityDefinitions": {
         "ApiKeyAuth": {

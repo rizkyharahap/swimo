@@ -18,7 +18,7 @@ import (
 // Server represents the HTTP server
 type Server struct {
 	server          *http.Server
-	logger          *logger.Logger
+	log             *logger.Logger
 	config          config.HTTPConfig
 	shutdownTimeout time.Duration
 	dbManager       *database.Manager
@@ -28,7 +28,7 @@ type Server struct {
 func NewServer(cfg config.HTTPConfig, log *logger.Logger) *Server {
 	return &Server{
 		config:          cfg,
-		logger:          log,
+		log:             log,
 		shutdownTimeout: 30 * time.Second, // Default shutdown timeout
 		dbManager:       database.NewManager(log),
 	}
@@ -61,7 +61,7 @@ func (s *Server) Start() error {
 
 	// Start server in goroutine
 	go func() {
-		s.logger.Info("Starting HTTP server",
+		s.log.Info("Starting HTTP server",
 			"host", s.config.Host,
 			"port", s.config.Port,
 			"read_timeout", s.config.ReadTimeout,
@@ -91,7 +91,7 @@ func (s *Server) Start() error {
 	case err := <-serverErrors:
 		return err
 	case <-shutdown:
-		s.logger.Info("Shutdown signal received, starting graceful shutdown")
+		s.log.Info("Shutdown signal received, starting graceful shutdown")
 		return s.gracefulShutdown(ctx)
 	}
 }
@@ -102,25 +102,25 @@ func (s *Server) gracefulShutdown(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(ctx, s.shutdownTimeout)
 	defer cancel()
 
-	s.logger.Info("Shutting down server...", "timeout", s.shutdownTimeout)
+	s.log.Info("Shutting down server...", "timeout", s.shutdownTimeout)
 
 	// Shutdown the server
 	if err := s.server.Shutdown(shutdownCtx); err != nil {
-		s.logger.Error("Server shutdown failed", "error", err)
+		s.log.Error("Server shutdown failed", "error", err)
 		return fmt.Errorf("server shutdown failed: %w", err)
 	}
 
 	// Close database connections
 	if s.dbManager != nil {
-		s.logger.Info("Closing database connections...")
+		s.log.Info("Closing database connections...")
 		if err := s.dbManager.CloseAll(); err != nil {
-			s.logger.Error("Failed to close database connections", "error", err)
+			s.log.Error("Failed to close database connections", "error", err)
 			return fmt.Errorf("database shutdown failed: %w", err)
 		}
-		s.logger.Info("Database connections closed successfully")
+		s.log.Info("Database connections closed successfully")
 	}
 
-	s.logger.Info("Server shutdown completed successfully")
+	s.log.Info("Server shutdown completed successfully")
 	return nil
 }
 
@@ -162,7 +162,7 @@ func (s *Server) getAddress() string {
 func (s *Server) startWithPrefork() error {
 	// Simple prefork implementation - just run multiple goroutines
 	// This is a simplified version compared to Fiber's actual prefork
-	s.logger.Info("Starting prefork mode", "workers", runtime.NumCPU())
+	s.log.Info("Starting prefork mode", "workers", runtime.NumCPU())
 
 	// Create a channel to handle server errors
 	serverErrors := make(chan error, 1)
@@ -171,7 +171,7 @@ func (s *Server) startWithPrefork() error {
 	numWorkers := runtime.NumCPU()
 	for i := range numWorkers {
 		go func(workerID int) {
-			s.logger.Info("Starting prefork worker", "worker_id", workerID)
+			s.log.Info("Starting prefork worker", "worker_id", workerID)
 
 			// Create a new server instance for this worker
 			workerServer := &http.Server{

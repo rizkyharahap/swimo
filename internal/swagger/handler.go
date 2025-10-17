@@ -13,11 +13,11 @@ import (
 
 type SwaggerHandler struct {
 	cfg     *config.Config
-	logger  *logger.Logger
+	log     *logger.Logger
 	Handler http.HandlerFunc
 }
 
-func NewSwaggerHandler(cfg *config.Config, logger *logger.Logger) *SwaggerHandler {
+func NewSwaggerHandler(cfg *config.Config, log *logger.Logger) *SwaggerHandler {
 	Handler := httpSwagger.Handler(
 		httpSwagger.URL("/swagger/docs"),
 		httpSwagger.DeepLinking(true),
@@ -25,7 +25,7 @@ func NewSwaggerHandler(cfg *config.Config, logger *logger.Logger) *SwaggerHandle
 		httpSwagger.DomID("swagger-ui"),
 	)
 
-	return &SwaggerHandler{cfg, logger, Handler}
+	return &SwaggerHandler{cfg, log, Handler}
 }
 
 func (h *SwaggerHandler) Docs(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +53,7 @@ func (h *SwaggerHandler) Docs(w http.ResponseWriter, r *http.Request) {
 
 	swaggerJSON["host"] = host
 	swaggerJSON["schemes"] = schemes
-	h.logger.Info("Swagger host dynamically configured", "host", host, "schemes", schemes)
+	h.log.Info("Swagger host dynamically configured", "host", host, "schemes", schemes)
 
 	// Marshal back to JSON
 	updatedData, err := json.MarshalIndent(swaggerJSON, "", "    ")

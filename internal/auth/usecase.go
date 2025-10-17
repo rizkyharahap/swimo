@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rizkyharahap/swimo/config"
+	"github.com/rizkyharahap/swimo/internal/user"
 	"github.com/rizkyharahap/swimo/pkg/logger"
 	"github.com/rizkyharahap/swimo/pkg/security"
 	"golang.org/x/crypto/bcrypt"
@@ -31,13 +32,14 @@ type AuthUsecase interface {
 
 type authUsecase struct {
 	cfg      *config.Config
-	logger   *logger.Logger
+	log      *logger.Logger
 	pool     *pgxpool.Pool
 	authRepo AuthRepository
+	userRepo user.UserRepository
 }
 
-func NewAuthUsecase(cfg *config.Config, logger *logger.Logger, pool *pgxpool.Pool, authRepo AuthRepository) AuthUsecase {
-	return &authUsecase{cfg, logger, pool, authRepo}
+func NewAuthUsecase(cfg *config.Config, log *logger.Logger, pool *pgxpool.Pool, authRepo AuthRepository, userRepo user.UserRepository) AuthUsecase {
+	return &authUsecase{cfg, log, pool, authRepo, userRepo}
 }
 
 func (uc *authUsecase) SignUp(ctx context.Context, req SignUpRequest) error {
@@ -58,7 +60,7 @@ func (uc *authUsecase) SignUp(ctx context.Context, req SignUpRequest) error {
 
 	accountID, err := uc.authRepo.CreateAccount(ctx, tx, email, string(hash))
 	if err != nil {
-		uc.logger.Warn("signup: create account failed, rolling back", "email", email, "error", err)
+		uc.log.Warn("signup: create account failed, rolling back", "email", email, "error", err)
 		return err
 	}
 
@@ -67,17 +69,16 @@ func (uc *authUsecase) SignUp(ctx context.Context, req SignUpRequest) error {
 
 	_, err = uc.authRepo.CreateUser(ctx, tx, user)
 	if err != nil {
-		uc.logger.Warn("signup: create user failed, rolling back", "account_id", accountID, "error", err)
+		uc.log.Warn("signup: create user failed, rolling back", "account_id", accountID, "error", err)
 		return err // tx rollback by defer
 	}
 
 	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
-		uc.logger.Error("signup: commit transaction failed", "email", email, "error", err)
+		uc.log.Error("signup: commit transaction failed", "email", email, "error", err)
 		return err
 	}
 
-	uc.logger.Info("signup success", "email", email)
 	return nil
 }
 
@@ -155,7 +156,6 @@ func (uc *authUsecase) SignInGuest(ctx context.Context, req SignInGuestRequest, 
 func (uc *authUsecase) SignOut(ctx context.Context, sessionId string) error {
 	if err := uc.authRepo.RevokeSessionById(ctx, sessionId); err != nil {
 		if err != pgx.ErrNoRows {
-			uc.logger.Error("sign-out: revoke session failed", "session_id", sessionId, "error", err)
 			return err
 		}
 	}
@@ -197,16 +197,25 @@ func (uc *authUsecase) createSessionToken(ctx context.Context, kind, userAgent s
 	}
 
 	var sessionId string
-	if kind == "guest" {
+	var userId *string
+	if kind == "guest" || accountId == nil {
 		sessionId, err = uc.authRepo.CreateGuestSession(ctx, session)
+		if err != nil {
+			return nil, err
+		}
 	} else {
+		userId, err = uc.userRepo.GetIdByAccountId(ctx, *accountId)
+		if err != nil {
+			return nil, err
+		}
+
 		sessionId, err = uc.authRepo.CreateUserSession(ctx, session)
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	accessToken, exp, err := security.NewAccessToken(uc.cfg.Auth.JWTSecret, uc.cfg.Auth.JWTAccessTTL, sessionId, kind, accountId)
+	accessToken, exp, err := security.NewAccessToken(uc.cfg.Auth.JWTSecret, uc.cfg.Auth.JWTAccessTTL, sessionId, kind, accountId, userId)
 	if err != nil {
 		return nil, err
 	}

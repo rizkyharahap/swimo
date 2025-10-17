@@ -19,23 +19,25 @@ var (
 )
 
 type Claim struct {
-	Kind      string
-	SessionID string
-	Sub       *string
-	IssuedAt  int64
-	ExpiresAt int64
+	Sub  string
+	Aid  *string
+	Uid  *string
+	Kind string
+	Iat  int64
+	Exp  int64
 }
 
-func NewAccessToken(secret string, ttl time.Duration, sessionID string, kind string, accountID *string) (token string, exp time.Time, err error) {
+func NewAccessToken(secret string, ttl time.Duration, sessionId string, kind string, accountId, userId *string) (token string, exp time.Time, err error) {
 	now := time.Now()
 	exp = now.Add(ttl)
 
 	claims := Claim{
-		Kind:      kind,
-		SessionID: sessionID,
-		Sub:       accountID,
-		IssuedAt:  now.Unix(),
-		ExpiresAt: exp.Unix(),
+		Sub:  sessionId,
+		Aid:  accountId,
+		Uid:  userId,
+		Kind: kind,
+		Iat:  now.Unix(),
+		Exp:  exp.Unix(),
 	}
 
 	token, err = signJWT(&claims, secret)
@@ -70,11 +72,11 @@ func VerifyJWT(token, secret string) (*Claim, error) {
 	}
 
 	var claims Claim
-	if err := json.Unmarshal(payloadBytes, &claims); err != nil || claims.SessionID == "" {
+	if err := json.Unmarshal(payloadBytes, &claims); err != nil || claims.Sub == "" {
 		return nil, ErrInvalidToken
 	}
 
-	if time.Now().Unix() > claims.ExpiresAt {
+	if time.Now().Unix() > claims.Exp {
 		return nil, ErrExpiredToken
 	}
 

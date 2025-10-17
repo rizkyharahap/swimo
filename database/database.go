@@ -18,7 +18,7 @@ import (
 type Database struct {
 	Pool   *pgxpool.Pool
 	Name   string
-	logger *logger.Logger
+	log    *logger.Logger
 	mu     sync.RWMutex
 	closed bool
 }
@@ -26,7 +26,7 @@ type Database struct {
 // Manager handles multiple database connections
 type Manager struct {
 	databases map[string]*Database
-	logger    *logger.Logger
+	log       *logger.Logger
 	mu        sync.RWMutex
 }
 
@@ -84,10 +84,10 @@ func escapeQuotes(s string) string {
 }
 
 // NewManager creates a new database manager
-func NewManager(logger *logger.Logger) *Manager {
+func NewManager(log *logger.Logger) *Manager {
 	return &Manager{
 		databases: make(map[string]*Database),
-		logger:    logger,
+		log:       log,
 	}
 }
 
@@ -114,7 +114,7 @@ func (m *Manager) Connect(ctx context.Context, name string, config *config.Datab
 	poolConfig.MaxConnIdleTime = config.MaxConnIdleTime
 
 	if appConfig.Env == "dev" {
-		poolConfig.ConnConfig.Tracer = pgxTracer{log: m.logger}
+		poolConfig.ConnConfig.Tracer = pgxTracer{log: m.log}
 	}
 
 	// Create connection pool
@@ -131,15 +131,15 @@ func (m *Manager) Connect(ctx context.Context, name string, config *config.Datab
 
 	// Create database instance
 	db := &Database{
-		Pool:   pool,
-		Name:   name,
-		logger: m.logger,
+		Pool: pool,
+		Name: name,
+		log:  m.log,
 	}
 
 	// Store in manager
 	m.databases[name] = db
 
-	m.logger.Info("Database connected", "name", name)
+	m.log.Info("Database connected", "name", name)
 	return db, nil
 }
 
@@ -187,7 +187,7 @@ func (m *Manager) CloseAll() error {
 
 	for name, db := range m.databases {
 		if err := db.close(); err != nil {
-			m.logger.Error("Failed to close database", "name", name, "error", err)
+			m.log.Error("Failed to close database", "name", name, "error", err)
 			errs = append(errs, err)
 		}
 	}
@@ -209,7 +209,7 @@ func (db *Database) close() error {
 
 	if db.Pool != nil {
 		db.Pool.Close()
-		db.logger.Info("Database closed", "name", db.Name)
+		db.log.Info("Database closed", "name", db.Name)
 	}
 
 	db.closed = true

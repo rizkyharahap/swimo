@@ -11,6 +11,8 @@ import (
 	"github.com/rizkyharahap/swimo/internal/auth"
 	"github.com/rizkyharahap/swimo/internal/health"
 	"github.com/rizkyharahap/swimo/internal/swagger"
+	"github.com/rizkyharahap/swimo/internal/training"
+	"github.com/rizkyharahap/swimo/internal/user"
 	"github.com/rizkyharahap/swimo/pkg/logger"
 	"github.com/rizkyharahap/swimo/pkg/middleware"
 	"github.com/rizkyharahap/swimo/pkg/server"
@@ -34,7 +36,6 @@ import (
 
 // @ExternalDocs.url https://github.com/rizkyharahap/swimo
 // @ExternalDocs.description Swimo GitHub Repository
-
 func main() {
 	// Load configuration
 	cfg := config.Parse()
@@ -71,20 +72,24 @@ func main() {
 
 	// Initialize repositories
 	authRepo := auth.NewAuthRepository(db.Pool)
+	userRepo := user.NewUserRepositry(db.Pool)
+	trainingRepo := training.NewTrainingRepositry(db.Pool)
 
 	// Initialize usecases
-	authUsecase := auth.NewAuthUsecase(cfg, log, db.Pool, authRepo)
+	authUsecase := auth.NewAuthUsecase(cfg, log, db.Pool, authRepo, userRepo)
+	trainingUsecase := training.NewTrainingUsecase(trainingRepo)
 
 	// Initialize handlers
 	healthHandler := health.NewHealthHandler(log, db)
 	swaggerHandler := swagger.NewSwaggerHandler(cfg, log)
-	authHandler := auth.NewAuthHandler(log, authUsecase)
+	authHandler := auth.NewAuthHandler(authUsecase)
+	trainingHandler := training.NewTrainingHandler(trainingUsecase)
 
 	// Create router
 	mux := http.NewServeMux()
 
 	// Setup routes
-	setupRoutes(mux, db, cfg, healthHandler, swaggerHandler, authHandler)
+	setupRoutes(mux, db, cfg, healthHandler, swaggerHandler, authHandler, trainingHandler)
 
 	// Apply middlewares
 	handler := middleware.Chain(
@@ -116,6 +121,7 @@ func setupRoutes(
 	healthHandler *health.HealthHandler,
 	swaggerHandler *swagger.SwaggerHandler,
 	authHandler *auth.AuthHandler,
+	trainingHandler *training.TrainingHandler,
 ) {
 	// Serve swagger.json file with dynamic host configuration
 	mux.HandleFunc("GET /swagger/docs", swaggerHandler.Docs)
@@ -137,5 +143,9 @@ func setupRoutes(
 		}
 
 		mux.Handle("POST /api/v1/sign-out", authMiddleware(authHandler.SignOut))
+
+		// Training endpoints - require authentication
+		mux.Handle("GET /api/v1/training/{id}", authMiddleware(trainingHandler.GetById))
+		mux.Handle("GET /api/v1/training/last", authMiddleware(trainingHandler.GetLastTraining))
 	}
 }

@@ -10,12 +10,12 @@ import (
 )
 
 type HealthHandler struct {
-	logger *logger.Logger
-	db     *database.Database
+	log *logger.Logger
+	db  *database.Database
 }
 
-func NewHealthHandler(logger *logger.Logger, db *database.Database) *HealthHandler {
-	return &HealthHandler{logger, db}
+func NewHealthHandler(log *logger.Logger, db *database.Database) *HealthHandler {
+	return &HealthHandler{log, db}
 }
 
 // Health check
@@ -34,7 +34,7 @@ func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
 	if h.db == nil {
 		resp := fmt.Sprintf(`{"status":"unhealthy","timestamp":"%s","service":"swimo-api","database":"unconnected"}`,
 			time.Now().UTC().Format(time.RFC3339))
-		h.logger.Error("Health check failed: database unconnected", resp)
+		h.log.Error("Health check failed: database unconnected", resp)
 
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -43,7 +43,7 @@ func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.Pool.Ping(ctx); err != nil {
 		resp := fmt.Sprintf(`{"status":"unhealthy ping","timestamp":"%s","service":"swimo-api","database":"disconnected"}`,
 			time.Now().UTC().Format(time.RFC3339))
-		h.logger.Error("Health check failed: ping error", resp)
+		h.log.Error("Health check failed: ping error", resp)
 
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -51,7 +51,7 @@ func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
 
 	resp := fmt.Sprintf(`{"status":"healthy","timestamp":"%s","service":"swimo-api","database":"connected"}`,
 		time.Now().UTC().Format(time.RFC3339))
-	h.logger.Info("Health check OK", "response", resp)
+	h.log.Info("Health check OK", "response", resp)
 
 	w.WriteHeader(http.StatusOK)
 }

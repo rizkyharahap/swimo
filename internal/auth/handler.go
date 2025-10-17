@@ -5,18 +5,16 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/rizkyharahap/swimo/pkg/logger"
 	"github.com/rizkyharahap/swimo/pkg/middleware"
 	"github.com/rizkyharahap/swimo/pkg/response"
 )
 
 type AuthHandler struct {
-	logger      *logger.Logger
 	authUsecase AuthUsecase
 }
 
-func NewAuthHandler(logger *logger.Logger, authUsecase AuthUsecase) *AuthHandler {
-	return &AuthHandler{logger, authUsecase}
+func NewAuthHandler(authUsecase AuthUsecase) *AuthHandler {
+	return &AuthHandler{authUsecase}
 }
 
 // SignUp handles user registration
@@ -170,7 +168,7 @@ func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claim := middleware.AuthFromContext(ctx)
 
-	if err := h.authUsecase.SignOut(ctx, claim.SessionID); err != nil {
+	if err := h.authUsecase.SignOut(ctx, claim.Sub); err != nil {
 		response.InternalError(w)
 		return
 	}
