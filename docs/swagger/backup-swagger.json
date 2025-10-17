@@ -185,9 +185,7 @@
         "/healthz": {
             "get": {
                 "description": "Check API and database connectivity",
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Service healthy"
@@ -197,16 +195,12 @@
                     }
                 },
                 "summary": "Health Check",
-                "tags": [
-                    "Monitoring"
-                ]
+                "tags": ["Monitoring"]
             }
         },
         "/refresh-token": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Generate new access token using refresh token",
                 "parameters": [
                     {
@@ -219,9 +213,7 @@
                         }
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Token refreshed successfully",
@@ -268,16 +260,12 @@
                     }
                 ],
                 "summary": "Refresh JWT token",
-                "tags": [
-                    "Auth"
-                ]
+                "tags": ["Auth"]
             }
         },
         "/sign-in": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Authenticate user with email and password, returns JWT tokens",
                 "parameters": [
                     {
@@ -290,9 +278,7 @@
                         }
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Sign in successful",
@@ -373,16 +359,12 @@
                     }
                 },
                 "summary": "Sign in user",
-                "tags": [
-                    "Auth"
-                ]
+                "tags": ["Auth"]
             }
         },
         "/sign-in-guest": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Authenticate guest user without credentials, returns limited access tokens",
                 "parameters": [
                     {
@@ -395,9 +377,7 @@
                         }
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Guest sign in successful",
@@ -465,20 +445,14 @@
                     }
                 },
                 "summary": "Sign in guest",
-                "tags": [
-                    "Auth"
-                ]
+                "tags": ["Auth"]
             }
         },
         "/sign-out": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Revoke user session and invalidate JWT tokens",
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Successfully signed out",
@@ -520,16 +494,12 @@
                     }
                 ],
                 "summary": "Sign out user",
-                "tags": [
-                    "Auth"
-                ]
+                "tags": ["Auth"]
             }
         },
         "/sign-up": {
             "post": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Register a new user account with email, password, and profile information",
                 "parameters": [
                     {
@@ -542,9 +512,7 @@
                         }
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "201": {
                         "description": "User registered successfully",
@@ -606,20 +574,14 @@
                     }
                 },
                 "summary": "Sign up new user",
-                "tags": [
-                    "Auth"
-                ]
+                "tags": ["Auth"]
             }
         },
         "/training/last": {
             "get": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Retrieve the most recent training session for the authenticated user",
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Last training session retrieved successfully",
@@ -677,16 +639,12 @@
                     }
                 ],
                 "summary": "Get user's last training session",
-                "tags": [
-                    "Training"
-                ]
+                "tags": ["Training"]
             }
         },
         "/training/{id}": {
             "get": {
-                "consumes": [
-                    "application/json"
-                ],
+                "consumes": ["application/json"],
                 "description": "Retrieve detailed training information by training ID",
                 "parameters": [
                     {
@@ -698,12 +656,27 @@
                         "type": "string"
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "produces": ["application/json"],
                 "responses": {
                     "200": {
                         "description": "Training retrieved successfully",
+                        "examples": {
+                            "application/json": {
+                                "data": {
+                                    "calories": 120,
+                                    "categoryCode": "BREASTSTROKE",
+                                    "content": "<p>HTML content here</p>",
+                                    "descriptions": "Short description about this training",
+                                    "id": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc",
+                                    "level": "beginner",
+                                    "name": "Breaststroke Basics",
+                                    "thumbnailUrl": "https://cdn.example.com/thumbs/breaststroke.png",
+                                    "time": "10-15 min",
+                                    "videoUrl": "https://cdn.example.com/videos/breaststroke.mp4"
+                                },
+                                "message": "Training retrieved successfully"
+                            }
+                        },
                         "schema": {
                             "allOf": [
                                 {
@@ -745,16 +718,11 @@
                     }
                 ],
                 "summary": "Get training by ID",
-                "tags": [
-                    "Training"
-                ]
+                "tags": ["Training"]
             }
         }
     },
-    "schemes": [
-        "http",
-        "https"
-    ],
+    "schemes": ["http", "https"],
     "securityDefinitions": {
         "ApiKeyAuth": {
             "description": "Type \"Bearer\" followed by a space and JWT token.",

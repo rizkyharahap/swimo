@@ -81,7 +81,7 @@ func main() {
 
 	// Initialize handlers
 	healthHandler := health.NewHealthHandler(log, db)
-	swaggerHandler := swagger.NewSwaggerHandler(cfg, log)
+	swaggerHandler := swagger.NewSwaggerHandler(cfg)
 	authHandler := auth.NewAuthHandler(authUsecase)
 	trainingHandler := training.NewTrainingHandler(trainingUsecase)
 
@@ -123,9 +123,9 @@ func setupRoutes(
 	authHandler *auth.AuthHandler,
 	trainingHandler *training.TrainingHandler,
 ) {
-	// Serve swagger.json file with dynamic host configuration
-	mux.HandleFunc("GET /swagger/docs", swaggerHandler.Docs)
-	mux.HandleFunc("GET /swagger/", swaggerHandler.Handler)
+
+	// Register swagger routes
+	mux.Handle("/swagger/", swaggerHandler.Handler)
 
 	// Health check endpoint
 	mux.HandleFunc("GET /api/v1/healthz", healthHandler.Check)
