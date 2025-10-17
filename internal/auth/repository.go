@@ -38,7 +38,8 @@ func (r *authRepository) GetAuthByEmail(ctx context.Context, email string) (*Aut
 			u.name, u.weight_kg, u.height_cm, u.age_years
 		FROM accounts AS a
 		JOIN users AS u ON a.id = u.account_id
-		WHERE a.email = $1`
+		WHERE a.email = $1
+		LIMIT 1`
 
 	var auth Auth
 	if err := r.db.QueryRow(ctx, q, email).Scan(
@@ -141,7 +142,8 @@ func (r *authRepository) GetSessionByRefreshToken(ctx context.Context, refreshTo
 		FROM sessions
 		WHERE refresh_token_hash = $1
 			AND revoked_at IS NULL
-			AND refresh_expires_at > NOW()`
+			AND refresh_expires_at > NOW()
+		LIMIT 1`
 
 	var session Session
 	if err := r.db.QueryRow(ctx, q, refreshToken).Scan(

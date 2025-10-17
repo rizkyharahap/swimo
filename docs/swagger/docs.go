@@ -20,26 +20,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/healthz": {
-            "get": {
-                "description": "Check API and database connectivity",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Monitoring"
-                ],
-                "summary": "Health Check",
-                "responses": {
-                    "200": {
-                        "description": "Service healthy"
-                    },
-                    "503": {
-                        "description": "Service unhealthy"
-                    }
-                }
-            }
-        },
         "/refresh-token": {
             "post": {
                 "security": [
@@ -317,7 +297,111 @@ const docTemplate = `{
                 }
             }
         },
-        "/training/last": {
+        "/trainings": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieve a paginated list of trainings with optional search and sorting",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Training"
+                ],
+                "summary": "Get trainings with pagination",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name.asc",
+                            "name.desc",
+                            "level.asc",
+                            "level.desc",
+                            "created_at.asc",
+                            "created_at.desc"
+                        ],
+                        "type": "string",
+                        "default": "created_at.desc",
+                        "description": "Sort field and direction",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search term for training name and description",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trainings retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessPagination"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/training.TrainingItemResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Training not found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessPagination"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/training.TrainingItemResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/trainings/last": {
             "get": {
                 "security": [
                     {
@@ -363,7 +447,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/training/{id}": {
+        "/trainings/{id}": {
             "get": {
                 "security": [
                     {
@@ -602,10 +686,61 @@ const docTemplate = `{
                 }
             }
         },
+        "response.Pagination": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "totalPages": {
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
         "response.Success": {
             "type": "object",
             "properties": {
                 "data": {}
+            }
+        },
+        "response.SuccessPagination": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "pagination": {
+                    "$ref": "#/definitions/response.Pagination"
+                }
+            }
+        },
+        "training.TrainingItemResponse": {
+            "type": "object",
+            "properties": {
+                "descriptions": {
+                    "type": "string",
+                    "example": "Short description about this training"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "8c4a2d27-56e2-4ef3-8a6e-43b812345abc"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "beginner"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Breaststroke Basics"
+                },
+                "thumbnailUrl": {
+                    "type": "string",
+                    "example": "https://cdn.example.com/thumbs/breaststroke.png"
+                }
             }
         },
         "training.TrainingResponse": {

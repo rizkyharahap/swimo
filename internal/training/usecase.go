@@ -13,7 +13,7 @@ var (
 type TrainingUsecase interface {
 	GetById(ctx context.Context, id string) (*TrainingResponse, error)
 	GetLastTraining(ctx context.Context, userId string) (*TrainingSessionResponse, error)
-	// GetList(ctx context.Context, req *TrainingListRequest) ([]TrainingItemResponse, int, error)
+	GetTrainings(ctx context.Context, query *TrainingsQuery) (trainingItems []TrainingItemResponse, totalPages int, err error)
 }
 
 type trainingUsecase struct {
@@ -49,14 +49,42 @@ func (u *trainingUsecase) GetById(ctx context.Context, id string) (*TrainingResp
 }
 
 func (uc *trainingUsecase) GetLastTraining(ctx context.Context, userId string) (*TrainingSessionResponse, error) {
-	session, err := uc.trainingRepo.GetLastByUserId(ctx, userId)
+	training, err := uc.trainingRepo.GetLastByUserId(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
 
-	if session == nil {
+	if training == nil {
 		return nil, ErrTrainingSessionNotFound
 	}
 
-	return (*TrainingSessionResponse)(session), nil
+	return (*TrainingSessionResponse)(training), nil
+}
+
+func (u *trainingUsecase) GetTrainings(ctx context.Context, query *TrainingsQuery) (trainingItems []TrainingItemResponse, totalPages int, err error) {
+	trainings, total, err := u.trainingRepo.GetList(ctx, query)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(trainings) == 0 {
+		return nil, 0, ErrTrainingNotFound
+	}
+
+	for _, training := range trainings {
+		trainingItems = append(trainingItems, TrainingItemResponse{
+			ID:           training.ID,
+			Level:        training.Level,
+			Name:         training.Name,
+			Descriptions: training.Descriptions,
+			ThumbnailURL: training.ThumbnailURL,
+		})
+	}
+
+	totalPages = 0
+	if total > 0 {
+		totalPages = (total + query.Limit - 1) / query.Limit
+	}
+
+	return trainingItems, totalPages, nil
 }

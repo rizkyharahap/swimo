@@ -7,15 +7,15 @@ import (
 )
 
 type CreateTrainingRequest struct {
-	CategoryCode string  `json:"categoryCode" example:"BREASTSTROKE"`
-	Level        string  `json:"level" example:"beginner"`
-	Name         string  `json:"name" example:"Breaststroke Basics"`
-	Descriptions string  `json:"descriptions" example:"Dasar gaya dada untuk pemula"`
-	Time         string  `json:"time" example:"10-15 min"`                                               // required (maps to time_label)
-	Calories     int     `json:"calories" example:"120"`                                                 // required (kcal) - positive integer
-	ThumbnailURL string  `json:"thumbnailUrl" example:"https://cdn.example.com/thumbs/breaststroke.png"` // required, valid URL
-	VideoURL     *string `json:"videoUrl" example:"https://cdn.example.com/videos/breaststroke.mp4"`     // required, valid URL
-	Content      string  `json:"content" example:"<p>HTML content here</p>"`                             // required (HTML string)
+	CategoryCode string `json:"categoryCode" example:"BREASTSTROKE"`
+	Level        string `json:"level" example:"beginner"`
+	Name         string `json:"name" example:"Breaststroke Basics"`
+	Descriptions string `json:"descriptions" example:"Dasar gaya dada untuk pemula"`
+	Time         string `json:"time" example:"10-15 min"`
+	Calories     int    `json:"calories" example:"120"`
+	ThumbnailURL string `json:"thumbnailUrl" example:"https://cdn.example.com/thumbs/breaststroke.png"`
+	VideoURL     string `json:"videoUrl" example:"https://cdn.example.com/videos/breaststroke.mp4"`
+	Content      string `json:"content" example:"<p>HTML content here</p>"`
 }
 
 type TrainingResponse struct {
@@ -34,7 +34,7 @@ type TrainingResponse struct {
 type TrainingSessionResponse struct {
 	ID         string  `json:"id" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
 	UserID     string  `json:"userId" example:"a1b2c3d4-e5f6-7890-1234-567890abcdef"`
-	TrainingID *string `json:"trainingId,omitempty" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
+	TrainingID string  `json:"trainingId" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
 	Distance   int     `json:"distance" example:"1500"`
 	Time       int     `json:"time" example:"1800"`
 	Pace       float64 `json:"pace" example:"1.2"`
@@ -46,6 +46,42 @@ type TrainingItemResponse struct {
 	Name         string `json:"name" example:"Breaststroke Basics"`
 	Descriptions string `json:"descriptions" example:"Short description about this training"`
 	ThumbnailURL string `json:"thumbnailUrl" example:"https://cdn.example.com/thumbs/breaststroke.png"`
+}
+
+type TrainingsQuery struct {
+	Page   int    `query:"page" validate:"min=1"`
+	Limit  int    `query:"limit" validate:"min=1,max=100"`
+	Sort   string `query:"sort" validate:"oneof=name.asc name.desc level.asc level.desc created_at.asc created_at.desc"`
+	Search string `query:"search"`
+}
+
+func (q *TrainingsQuery) Validate() *validator.ValidationError {
+	errors := make(map[string]string)
+
+	if q.Page < 1 {
+		errors["page"] = "Page must be at least 1"
+	}
+
+	if q.Limit < 1 {
+		errors["limit"] = "Limit must be at least 1"
+	} else if q.Limit > 100 {
+		errors["limit"] = "Limit must not exceed 100"
+	}
+
+	validSorts := map[string]bool{
+		"name.asc": true, "name.desc": true,
+		"level.asc": true, "level.desc": true,
+		"created_at.asc": true, "created_at.desc": true,
+	}
+	if q.Sort != "" && !validSorts[q.Sort] {
+		errors["sort"] = "Sort must be one of: name.asc, name.desc, level.asc, level.desc, created_at.asc, created_at.desc"
+	}
+
+	if len(errors) > 0 {
+		return &validator.ValidationError{Errors: errors}
+	}
+
+	return nil
 }
 
 func (r *CreateTrainingRequest) Validate() error {
@@ -92,10 +128,8 @@ func (r *CreateTrainingRequest) Validate() error {
 		errors["thumbnailUrl"] = "ThumbnailURL is not a valid URL"
 	}
 
-	// VideoURL (required + URL format)
-	if r.VideoURL == nil || strings.TrimSpace(*r.VideoURL) == "" {
-		errors["videoUrl"] = "VideoURL is required"
-	} else if !validator.URLPattern.MatchString(strings.TrimSpace(*r.VideoURL)) {
+	// VideoURL (URL format)
+	if strings.TrimSpace(r.VideoURL) != "" && !validator.URLPattern.MatchString(strings.TrimSpace(r.VideoURL)) {
 		errors["videoUrl"] = "VideoURL is not a valid URL"
 	}
 

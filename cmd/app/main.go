@@ -145,7 +145,8 @@ func setupRoutes(
 		mux.Handle("POST /api/v1/sign-out", authMiddleware(authHandler.SignOut))
 
 		// Training endpoints - require authentication
-		mux.Handle("GET /api/v1/training/{id}", authMiddleware(trainingHandler.GetById))
-		mux.Handle("GET /api/v1/training/last", authMiddleware(trainingHandler.GetLastTraining))
+		mux.Handle("GET /api/v1/trainings/{id}", authMiddleware(trainingHandler.GetById))
+		mux.Handle("GET /api/v1/trainings/last", authMiddleware(trainingHandler.GetLastTraining))
+		mux.Handle("GET /api/v1/trainings", authMiddleware(trainingHandler.GetTrainings))
 	}
 }
