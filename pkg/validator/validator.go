@@ -1,7 +1,7 @@
 package validator
 
 import (
-	"regexp"
+	"net/url"
 	"strings"
 )
 
@@ -22,5 +22,12 @@ func (e *ValidationError) Error() string {
 	return sb.String()
 }
 
-var EmailPattern = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
-var URLPattern = regexp.MustCompile(`^(https?://[^\s]+)$`)
+func IsValidEmail(s string) bool {
+	_, err := url.ParseRequestURI(s)
+	return err == nil
+}
+
+func IsValidURL(s string) bool {
+	_, err := url.ParseRequestURI(s)
+	return err == nil
+}

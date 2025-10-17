@@ -71,15 +71,22 @@ func (r *SignUpRequest) ToUserEntity(accountID string) *User {
 	}
 }
 
+func trim(s string) string {
+	return strings.TrimSpace(s)
+}
+
 // Validate validates the sign in request
 func (r *SignInRequest) Validate() *validator.ValidationError {
 	errors := make(map[string]string)
 
-	sanitizedEmail := strings.TrimSpace(strings.ToLower(r.Email))
-	if !validator.EmailPattern.MatchString(sanitizedEmail) {
+	r.Email = strings.ToLower(trim(r.Email))
+	if r.Email == "" {
+		errors["email"] = "Email is required"
+	} else if !validator.IsValidEmail(r.Email) {
 		errors["email"] = "Email is not a valid format"
 	}
 
+	r.Password = trim(r.Password)
 	if r.Password == "" {
 		errors["password"] = "Password is required"
 	} else if len(r.Password) < 8 {
@@ -97,44 +104,42 @@ func (r *SignInRequest) Validate() *validator.ValidationError {
 func (r *SignUpRequest) Validate() *validator.ValidationError {
 	errors := make(map[string]string)
 
-	sanitizedEmail := strings.TrimSpace(strings.ToLower(r.Email))
-	if !validator.EmailPattern.MatchString(sanitizedEmail) {
+	r.Email = strings.ToLower(trim(r.Email))
+	if r.Email == "" {
+		errors["email"] = "Email is required"
+	} else if !validator.IsValidEmail(r.Email) {
 		errors["email"] = "Email is not a valid format"
 	}
 
+	r.Password = trim(r.Password)
 	if r.Password == "" {
 		errors["password"] = "Password is required"
 	} else if len(r.Password) < 8 {
 		errors["password"] = "Password must be at least 8 characters"
 	}
 
+	r.ConfirmPassword = trim(r.ConfirmPassword)
 	if r.ConfirmPassword == "" {
 		errors["confirmPassword"] = "Confirm password is required"
-	}
-	if r.Password != r.ConfirmPassword {
+	} else if r.Password != r.ConfirmPassword {
 		errors["confirmPassword"] = "Confirm passwords do not match"
 	}
 
-	if strings.TrimSpace(r.Name) == "" {
+	r.Name = trim(r.Name)
+	if r.Name == "" {
 		errors["name"] = "Name is required"
 	}
 
-	if r.Weight == 0 {
-		errors["weight"] = "Weight is required"
-	} else if r.Weight < 0 {
-		errors["weight"] = "Weight cannot be negative"
+	if r.Weight <= 0 {
+		errors["weight"] = "Weight must be a positive number"
 	}
 
-	if r.Height == 0 {
-		errors["height"] = "Height is required"
-	} else if r.Height < 0 {
+	if r.Height <= 0 {
 		errors["height"] = "Height cannot be negative"
 	}
 
-	if r.Age == 0 {
-		errors["age"] = "Age is required"
-	} else if r.Age < 0 {
-		errors["age"] = "Age cannot be negative"
+	if r.Age <= 0 {
+		errors["age"] = "Age must be a positive number"
 	}
 
 	if len(errors) > 0 {
@@ -148,22 +153,16 @@ func (r *SignUpRequest) Validate() *validator.ValidationError {
 func (r *SignInGuestRequest) Validate() *validator.ValidationError {
 	errors := make(map[string]string)
 
-	if r.Weight == 0 {
-		errors["weight"] = "Weight is required"
-	} else if r.Weight < 0 {
-		errors["weight"] = "Weight cannot be negative"
+	if r.Weight <= 0 {
+		errors["weight"] = "Weight must be a positive number"
 	}
 
-	if r.Height == 0 {
-		errors["height"] = "Height is required"
-	} else if r.Height < 0 {
-		errors["height"] = "Height cannot be negative"
+	if r.Height <= 0 {
+		errors["height"] = "Height must be a positive number"
 	}
 
-	if r.Age == 0 {
-		errors["age"] = "Age is required"
-	} else if r.Age < 0 {
-		errors["age"] = "Age cannot be negative"
+	if r.Age <= 0 {
+		errors["age"] = "Age must be a positive number"
 	}
 
 	if len(errors) > 0 {
@@ -177,6 +176,7 @@ func (r *SignInGuestRequest) Validate() *validator.ValidationError {
 func (r *RefreshTokenRequest) Validate() *validator.ValidationError {
 	errors := make(map[string]string)
 
+	r.RefreshToken = trim(r.RefreshToken)
 	if r.RefreshToken == "" {
 		errors["refresh_token"] = "Refresh token is required"
 	}

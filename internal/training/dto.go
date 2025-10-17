@@ -55,6 +55,10 @@ type TrainingsQuery struct {
 	Search string `query:"search"`
 }
 
+func trim(s string) string {
+	return strings.TrimSpace(s)
+}
+
 func (q *TrainingsQuery) Validate() *validator.ValidationError {
 	errors := make(map[string]string)
 
@@ -87,54 +91,53 @@ func (q *TrainingsQuery) Validate() *validator.ValidationError {
 func (r *TrainingRequest) Validate() error {
 	errors := make(map[string]string)
 
-	// CategoryCode
-	if strings.TrimSpace(r.CategoryCode) == "" {
+	r.CategoryCode = trim(r.CategoryCode)
+	if r.CategoryCode == "" {
 		errors["categoryCode"] = "CategoryCode is required"
 	}
 
-	// Level
-	if strings.TrimSpace(r.Level) == "" {
+	r.Level = trim(r.Level)
+	if r.Level == "" {
 		errors["level"] = "Level is required"
 	} else if len(r.Level) > 50 {
 		errors["level"] = "Level must not exceed 50 characters"
 	}
 
-	// Name
-	if strings.TrimSpace(r.Name) == "" {
+	r.Name = trim(r.Name)
+	if r.Name == "" {
 		errors["name"] = "Name is required"
 	} else if len(r.Name) > 100 {
 		errors["name"] = "Name must not exceed 100 characters"
 	}
 
-	// Descriptions
-	if strings.TrimSpace(r.Descriptions) == "" {
+	r.Descriptions = trim(r.Descriptions)
+	if r.Descriptions == "" {
 		errors["descriptions"] = "Descriptions is required"
 	}
 
-	// Time (required, simple non-empty)
-	if strings.TrimSpace(r.Time) == "" {
+	r.Time = trim(r.Time)
+	if r.Time == "" {
 		errors["time"] = "Time is required"
 	}
 
-	// Calories (required, positive)
 	if r.Calories <= 0 {
 		errors["calories"] = "Calories must be a positive integer"
 	}
 
-	// ThumbnailURL (required + URL format)
-	if strings.TrimSpace(r.ThumbnailURL) == "" {
+	r.ThumbnailURL = trim(r.ThumbnailURL)
+	if r.ThumbnailURL == "" {
 		errors["thumbnailUrl"] = "ThumbnailURL is required"
-	} else if !validator.URLPattern.MatchString(strings.TrimSpace(r.ThumbnailURL)) {
+	} else if !validator.IsValidURL(r.ThumbnailURL) {
 		errors["thumbnailUrl"] = "ThumbnailURL is not a valid URL"
 	}
 
-	// VideoURL (URL format)
-	if strings.TrimSpace(r.VideoURL) != "" && !validator.URLPattern.MatchString(strings.TrimSpace(r.VideoURL)) {
+	r.VideoURL = trim(r.VideoURL)
+	if r.VideoURL != "" && !validator.IsValidURL(r.VideoURL) {
 		errors["videoUrl"] = "VideoURL is not a valid URL"
 	}
 
-	// Content (required)
-	if strings.TrimSpace(r.Content) == "" {
+	r.Content = trim(r.Content)
+	if r.Content == "" {
 		errors["content"] = "Content is required"
 	}
 
