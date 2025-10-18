@@ -563,6 +563,77 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/trainings/{id}/finish": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Complete an ongoing training session with distance and duration metrics",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Training"
+                ],
+                "summary": "Finish a training session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"8c4a2d27-56e2-4ef3-8a6e-43b812345abc\"",
+                        "description": "Training ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Training finish session request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/training.TrainingFinishSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Training session finished successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/training.TrainingSessionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "User not found or Training not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -792,6 +863,19 @@ const docTemplate = `{
                 "data": {},
                 "pagination": {
                     "$ref": "#/definitions/response.Pagination"
+                }
+            }
+        },
+        "training.TrainingFinishSessionRequest": {
+            "type": "object",
+            "properties": {
+                "distanceMeters": {
+                    "type": "integer",
+                    "example": 300
+                },
+                "durationSeconds": {
+                    "type": "integer",
+                    "example": 50
                 }
             }
         },

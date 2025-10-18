@@ -279,7 +279,7 @@ func (r *trainingRepository) FinishSession(ctx context.Context, trainingSession 
 		INSERT INTO training_sessions
 			(user_id, training_id, distance_meters, duration_seconds, pace, calories_kcal)
 			VALUES ($1, $2, $3, $4, $5, $6)
-			RETURNING id`
+			RETURNING id, pace`
 
 	if err := r.db.QueryRow(ctx, q,
 		trainingSession.UserID,
@@ -288,7 +288,7 @@ func (r *trainingRepository) FinishSession(ctx context.Context, trainingSession 
 		trainingSession.DurationSeconds,
 		trainingSession.Pace,
 		trainingSession.CaloriesKcal,
-	).Scan(&trainingSession.ID); err != nil {
+	).Scan(&trainingSession.ID, &trainingSession.Pace); err != nil {
 		return nil, err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/rizkyharahap/swimo/internal/user"
 	"github.com/rizkyharahap/swimo/pkg/middleware"
 	"github.com/rizkyharahap/swimo/pkg/response"
 	"github.com/rizkyharahap/swimo/pkg/validator"
@@ -187,6 +188,19 @@ func (h *TrainingHandler) GetLastSession(w http.ResponseWriter, r *http.Request)
 	response.JSON(w, http.StatusOK, response.Success{Data: trainingSession})
 }
 
+// FinishSession handles finishing a training session
+// @Summary Finish a training session
+// @Description Complete an ongoing training session with distance and duration metrics
+// @Tags Training
+// @Accept json
+// @Produce json
+// @Param id path string true "Training ID" example("8c4a2d27-56e2-4ef3-8a6e-43b812345abc")
+// @Param request body TrainingFinishSessionRequest true "Training finish session request"
+// @Success 201 {object} response.Success{data=TrainingSessionResponse} "Training session finished successfully"
+// @Failure 404 {object} response.Error "User not found or Training not found"
+// @Failure 422 {object} response.Error "Validation errors"
+// @Security ApiKeyAuth
+// @Router /trainings/{id}/finish [post]
 func (h *TrainingHandler) FinishSession(w http.ResponseWriter, r *http.Request) {
 	var req TrainingFinishSessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -205,10 +219,16 @@ func (h *TrainingHandler) FinishSession(w http.ResponseWriter, r *http.Request) 
 
 	training, err := h.trainingUseCase.FinishSession(r.Context(), *claim.Uid, id, &req)
 	if err != nil {
-		if err == ErrorTrainingExists {
-			response.JSON(w, http.StatusConflict, response.Message{Message: "Training already exists"})
+		if err == user.ErrUserNotFound {
+			response.JSON(w, http.StatusNotFound, "User not found")
 			return
 		}
+
+		if err == ErrTrainingCategoryNotFound {
+			response.JSON(w, http.StatusNotFound, "Training not found")
+			return
+		}
+
 		response.InternalError(w)
 		return
 	}

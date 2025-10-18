@@ -149,5 +149,6 @@ func setupRoutes(
 		mux.Handle("GET /api/v1/trainings", authMiddleware(trainingHandler.GetTrainings))
 		mux.Handle("POST /api/v1/trainings", authMiddleware(trainingHandler.CreateTraining))
 		mux.Handle("GET /api/v1/trainings/sessions/last", authMiddleware(trainingHandler.GetLastSession))
+		mux.Handle("POST /api/v1/trainings/{id}/finish", authMiddleware(trainingHandler.FinishSession))
 	}
 }
