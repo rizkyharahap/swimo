@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   account_id uuid NOT NULL UNIQUE
              REFERENCES accounts(id) ON DELETE CASCADE,
   name       text   NOT NULL,
+  gender     numeric NOT NULL,                 -- 0: male, 1: female
   weight_kg  numeric(6,2),                     -- kg
   height_cm  numeric(6,2),                     -- cm
   age_years  smallint,

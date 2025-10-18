@@ -11,8 +11,8 @@ type TrainingRequest struct {
 	Level        string `json:"level" example:"beginner"`
 	Name         string `json:"name" example:"Breaststroke Basics"`
 	Descriptions string `json:"descriptions" example:"Dasar gaya dada untuk pemula"`
-	Time         string `json:"time" example:"10-15 min"`
-	Calories     int    `json:"calories" example:"120"`
+	TimeLabel    string `json:"time" example:"10-15 min"`
+	CaloriesKcal int    `json:"caloriesKcal" example:"120"`
 	ThumbnailURL string `json:"thumbnailUrl" example:"https://cdn.example.com/thumbs/breaststroke.png"`
 	VideoURL     string `json:"videoUrl" example:"https://cdn.example.com/videos/breaststroke.mp4"`
 	Content      string `json:"content" example:"<p>HTML content here</p>"`
@@ -21,23 +21,25 @@ type TrainingRequest struct {
 type TrainingResponse struct {
 	ID           string  `json:"id" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
 	CategoryCode string  `json:"categoryCode" example:"BREASTSTROKE"`
+	CategoryName string  `json:"categoryName" example:"Breaststroke"`
 	Level        string  `json:"level" example:"beginner"`
 	Name         string  `json:"name" example:"Breaststroke Basics"`
 	Descriptions string  `json:"descriptions" example:"Short description about this training"`
-	Time         string  `json:"time" example:"10-15 min"`
-	Calories     int     `json:"calories" example:"120"`
+	TimeLabel    string  `json:"timeLabel" example:"10-15 min"`
+	CaloriesKcal int     `json:"caloriesKcal" example:"120"`
 	ThumbnailURL string  `json:"thumbnailUrl" example:"https://cdn.example.com/thumbs/breaststroke.png"`
 	VideoURL     *string `json:"videoUrl" example:"https://cdn.example.com/videos/breaststroke.mp4"`
-	Content      string  `json:"content" example:"<p>HTML content here</p>"`
+	ContentHTML  string  `json:"content" example:"<p>HTML content here</p>"`
 }
 
 type TrainingSessionResponse struct {
-	ID         string  `json:"id" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
-	UserID     string  `json:"userId" example:"a1b2c3d4-e5f6-7890-1234-567890abcdef"`
-	TrainingID string  `json:"trainingId" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
-	Distance   int     `json:"distance" example:"1500"`
-	Time       int     `json:"time" example:"1800"`
-	Pace       float64 `json:"pace" example:"1.2"`
+	ID              string  `json:"id" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
+	UserID          string  `json:"userId" example:"a1b2c3d4-e5f6-7890-1234-567890abcdef"`
+	TrainingID      string  `json:"trainingId" example:"8c4a2d27-56e2-4ef3-8a6e-43b812345abc"`
+	DistanceMeters  int     `json:"distanceMeters" example:"1500"`
+	DurationSeconds int     `json:"durationSeconds" example:"1800"`
+	Pace            float64 `json:"pace" example:"1.2"`
+	CaloriesKcal    int     `json:"caloriesKcal" example:"120"`
 }
 
 type TrainingItemResponse struct {
@@ -53,6 +55,11 @@ type TrainingsQuery struct {
 	Limit  int    `query:"limit" validate:"min=1,max=100"`
 	Sort   string `query:"sort" validate:"oneof=name.asc name.desc level.asc level.desc created_at.asc created_at.desc"`
 	Search string `query:"search"`
+}
+
+type TrainingFinishSessionRequest struct {
+	DistanceMeters  int `json:"distanceMeters" example:"300"`
+	DurationSeconds int `json:"durationSeconds" example:"50"`
 }
 
 func trim(s string) string {
@@ -115,13 +122,13 @@ func (r *TrainingRequest) Validate() error {
 		errors["descriptions"] = "Descriptions is required"
 	}
 
-	r.Time = trim(r.Time)
-	if r.Time == "" {
-		errors["time"] = "Time is required"
+	r.TimeLabel = trim(r.TimeLabel)
+	if r.TimeLabel == "" {
+		errors["timeLabel"] = "TimeLabel is required"
 	}
 
-	if r.Calories <= 0 {
-		errors["calories"] = "Calories must be a positive integer"
+	if r.CaloriesKcal <= 0 {
+		errors["caloriesKcal"] = "CaloriesKcal must be a positive integer"
 	}
 
 	r.ThumbnailURL = trim(r.ThumbnailURL)
@@ -139,6 +146,24 @@ func (r *TrainingRequest) Validate() error {
 	r.Content = trim(r.Content)
 	if r.Content == "" {
 		errors["content"] = "Content is required"
+	}
+
+	if len(errors) > 0 {
+		return &validator.ValidationError{Errors: errors}
+	}
+
+	return nil
+}
+
+func (r *TrainingFinishSessionRequest) Validate() error {
+	errors := make(map[string]string)
+
+	if r.DistanceMeters <= 0 {
+		errors["distanceMeters"] = "DistanceMeteres must be a positive integer"
+	}
+
+	if r.DurationSeconds <= 0 {
+		errors["timeLabel"] = "TimeLabel must be a positive integer"
 	}
 
 	if len(errors) > 0 {

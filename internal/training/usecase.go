@@ -3,6 +3,8 @@ package training
 import (
 	"context"
 	"errors"
+
+	"github.com/rizkyharahap/swimo/internal/user"
 )
 
 var (
@@ -12,17 +14,19 @@ var (
 
 type TrainingUsecase interface {
 	GetById(ctx context.Context, id string) (*TrainingResponse, error)
-	GetLastTraining(ctx context.Context, userId string) (*TrainingSessionResponse, error)
 	GetTrainings(ctx context.Context, query *TrainingsQuery) (trainingItems []TrainingItemResponse, totalPages int, err error)
 	CreateTraining(ctx context.Context, req *TrainingRequest) (*TrainingResponse, error)
+	GetLastSession(ctx context.Context, userId string) (*TrainingSessionResponse, error)
+	FinishSession(ctx context.Context, userId string, trainingId string, req *TrainingFinishSessionRequest) (*TrainingSessionResponse, error)
 }
 
 type trainingUsecase struct {
 	trainingRepo TrainingRepository
+	userRepo     user.UserRepository
 }
 
-func NewTrainingUsecase(trainingRepo TrainingRepository) TrainingUsecase {
-	return &trainingUsecase{trainingRepo}
+func NewTrainingUsecase(trainingRepo TrainingRepository, userRepo user.UserRepository) TrainingUsecase {
+	return &trainingUsecase{trainingRepo, userRepo}
 }
 
 func (u *trainingUsecase) GetById(ctx context.Context, id string) (*TrainingResponse, error) {
@@ -40,17 +44,18 @@ func (u *trainingUsecase) GetById(ctx context.Context, id string) (*TrainingResp
 		Level:        training.Level,
 		Name:         training.Name,
 		Descriptions: training.Descriptions,
-		Time:         training.TimeLabel,
-		Calories:     training.CaloriesKcal,
+		TimeLabel:    training.TimeLabel,
+		CaloriesKcal: training.CaloriesKcal,
 		ThumbnailURL: training.ThumbnailURL,
 		VideoURL:     training.VideoURL,
-		Content:      training.ContentHTML,
+		ContentHTML:  training.ContentHTML,
 		CategoryCode: training.CategoryCode,
+		CategoryName: *training.CategoryName,
 	}, nil
 }
 
-func (uc *trainingUsecase) GetLastTraining(ctx context.Context, userId string) (*TrainingSessionResponse, error) {
-	training, err := uc.trainingRepo.GetLastByUserId(ctx, userId)
+func (uc *trainingUsecase) GetLastSession(ctx context.Context, userId string) (*TrainingSessionResponse, error) {
+	training, err := uc.trainingRepo.GetLastSessionByUserId(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +101,8 @@ func (u *trainingUsecase) CreateTraining(ctx context.Context, req *TrainingReque
 		Level:        req.Level,
 		Name:         req.Name,
 		Descriptions: req.Descriptions,
-		TimeLabel:    req.Time,
-		CaloriesKcal: req.Calories,
+		TimeLabel:    req.TimeLabel,
+		CaloriesKcal: req.CaloriesKcal,
 		ThumbnailURL: req.ThumbnailURL,
 		VideoURL:     &req.VideoURL,
 		ContentHTML:  req.Content,
@@ -111,11 +116,34 @@ func (u *trainingUsecase) CreateTraining(ctx context.Context, req *TrainingReque
 		Level:        training.Level,
 		Name:         training.Name,
 		Descriptions: training.Descriptions,
-		Time:         training.TimeLabel,
-		Calories:     training.CaloriesKcal,
+		TimeLabel:    training.TimeLabel,
+		CaloriesKcal: training.CaloriesKcal,
 		ThumbnailURL: training.ThumbnailURL,
 		VideoURL:     training.VideoURL,
-		Content:      training.ContentHTML,
+		ContentHTML:  training.ContentHTML,
 		CategoryCode: training.CategoryCode,
+		CategoryName: *training.CategoryName,
 	}, nil
+}
+
+func (u *trainingUsecase) FinishSession(ctx context.Context, userId string, trainingId string, req *TrainingFinishSessionRequest) (*TrainingSessionResponse, error) {
+	user, err := u.userRepo.GetUserById(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	trainingCategory, err := u.trainingRepo.GetTrainingCategoryByTrainingId(ctx, trainingId)
+	if err != nil {
+		return nil, err
+	}
+
+	bmr := user.GetBMR()
+	trainingSession := NewTrainingSession(userId, trainingId, req.DistanceMeters, req.DurationSeconds, bmr, trainingCategory.MET)
+
+	finishedSession, err := u.trainingRepo.FinishSession(ctx, trainingSession)
+	if err != nil {
+		return nil, err
+	}
+
+	return (*TrainingSessionResponse)(finishedSession), nil
 }

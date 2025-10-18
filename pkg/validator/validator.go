@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"net/mail"
 	"net/url"
 	"strings"
 )
@@ -23,7 +24,7 @@ func (e *ValidationError) Error() string {
 }
 
 func IsValidEmail(s string) bool {
-	_, err := url.ParseRequestURI(s)
+	_, err := mail.ParseAddress(s)
 	return err == nil
 }
 

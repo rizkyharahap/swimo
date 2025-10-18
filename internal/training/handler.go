@@ -46,34 +46,6 @@ func (h *TrainingHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, response.Success{Data: training})
 }
 
-// GetLastTraining handles getting user's last training session
-// @Summary Get user's last training session
-// @Description Retrieve the most recent training session
-// @Tags Training
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.Success{data=TrainingSessionResponse} "Last training session retrieved successfully"
-// @Failure 404 {object} response.Message "No training sessions found"
-// @Security ApiKeyAuth
-// @Router /trainings/last [get]
-func (h *TrainingHandler) GetLastTraining(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	claim := middleware.AuthFromContext(ctx)
-
-	trainingSession, err := h.trainingUseCase.GetLastTraining(ctx, *claim.Uid)
-	if err != nil {
-		if err == ErrTrainingSessionNotFound {
-			response.JSON(w, http.StatusNotFound, response.Message{Message: "No training sessions found"})
-			return
-		}
-
-		response.InternalError(w)
-		return
-	}
-
-	response.JSON(w, http.StatusOK, response.Success{Data: trainingSession})
-}
-
 // GetTrainings handles getting paginated list of trainings
 // @Summary Get trainings with pagination
 // @Description Retrieve a paginated list of trainings with optional search and sorting
@@ -175,6 +147,63 @@ func (h *TrainingHandler) CreateTraining(w http.ResponseWriter, r *http.Request)
 	}
 
 	training, err := h.trainingUseCase.CreateTraining(r.Context(), &req)
+	if err != nil {
+		if err == ErrorTrainingExists {
+			response.JSON(w, http.StatusConflict, response.Message{Message: "Training already exists"})
+			return
+		}
+		response.InternalError(w)
+		return
+	}
+
+	response.JSON(w, http.StatusCreated, response.Success{Data: training})
+}
+
+// GetLastTraining handles getting user's last training session
+// @Summary Get user's last training session
+// @Description Retrieve the most recent training session
+// @Tags Training
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Success{data=TrainingSessionResponse} "Last training session retrieved successfully"
+// @Failure 404 {object} response.Message "No training sessions found"
+// @Security ApiKeyAuth
+// @Router /trainings/sessions/last [get]
+func (h *TrainingHandler) GetLastSession(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claim := middleware.AuthFromContext(ctx)
+
+	trainingSession, err := h.trainingUseCase.GetLastSession(ctx, *claim.Uid)
+	if err != nil {
+		if err == ErrTrainingSessionNotFound {
+			response.JSON(w, http.StatusNotFound, response.Message{Message: "No training sessions found"})
+			return
+		}
+
+		response.InternalError(w)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.Success{Data: trainingSession})
+}
+
+func (h *TrainingHandler) FinishSession(w http.ResponseWriter, r *http.Request) {
+	var req TrainingFinishSessionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		response.ValidationError(w, err.(*validator.ValidationError).Errors)
+		return
+	}
+
+	ctx := r.Context()
+	claim := middleware.AuthFromContext(ctx)
+	id := r.PathValue("id")
+
+	training, err := h.trainingUseCase.FinishSession(r.Context(), *claim.Uid, id, &req)
 	if err != nil {
 		if err == ErrorTrainingExists {
 			response.JSON(w, http.StatusConflict, response.Message{Message: "Training already exists"})

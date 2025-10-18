@@ -64,18 +64,28 @@ func (uc *authUsecase) SignUp(ctx context.Context, req SignUpRequest) error {
 		return err
 	}
 
-	// Create user profile
-	user := req.ToUserEntity(accountID)
-
-	_, err = uc.authRepo.CreateUser(ctx, tx, user)
+	gender, err := user.ParseGender(req.Gender)
 	if err != nil {
-		uc.log.Warn("signup: create user failed, rolling back", "account_id", accountID, "error", err)
+		return err
+	}
+
+	// Create user profile
+	user := user.User{
+		AccountID: accountID,
+		Name:      req.Name,
+		Gender:    gender,
+		WeightKG:  req.Weight,
+		HeightCM:  req.Height,
+		AgeYears:  req.Age,
+	}
+
+	_, err = uc.userRepo.CreateUser(ctx, tx, &user)
+	if err != nil {
 		return err // tx rollback by defer
 	}
 
 	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
-		uc.log.Error("signup: commit transaction failed", "email", email, "error", err)
 		return err
 	}
 

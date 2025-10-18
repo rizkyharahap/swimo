@@ -11,19 +11,47 @@ import (
 )
 
 var (
-	ErrorTrainingExists = errors.New("training already exists")
+	ErrorTrainingExists         = errors.New("training already exists")
+	ErrTrainingCategoryNotFound = errors.New("training category not found")
 )
 
 type TrainingRepository interface {
+	GetTrainingCategoryByTrainingId(ctx context.Context, code string) (*TrainingCategory, error)
 	GetById(ctx context.Context, id string) (*Training, error)
-	GetLastByUserId(ctx context.Context, userID string) (*TrainingSession, error)
 	GetList(ctx context.Context, query *TrainingsQuery) ([]*TrainingItem, int, error)
 	Create(ctx context.Context, training *Training) (*Training, error)
+	GetLastSessionByUserId(ctx context.Context, userID string) (*TrainingSession, error)
+	FinishSession(ctx context.Context, trainingSession *TrainingSession) (*TrainingSession, error)
 }
 
 type trainingRepository struct{ db *pgxpool.Pool }
 
 func NewTrainingRepositry(db *pgxpool.Pool) TrainingRepository { return &trainingRepository{db: db} }
+
+func (r *trainingRepository) GetTrainingCategoryByTrainingId(ctx context.Context, trainingId string) (*TrainingCategory, error) {
+	const q = `
+		SELECT
+			tc.id, tc.code, tc.name, tc.met
+		FROM training_categories tc
+		JOIN trainings t ON t.category_id = tc.id
+		WHERE t.id = $1
+		LIMIT 1
+	`
+	var category TrainingCategory
+	err := r.db.QueryRow(ctx, q, trainingId).Scan(
+		&category.ID,
+		&category.Code,
+		&category.Name,
+		&category.MET,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrTrainingCategoryNotFound
+		}
+		return nil, err
+	}
+	return &category, nil
+}
 
 func (r *trainingRepository) GetById(ctx context.Context, id string) (*Training, error) {
 	const q = `
@@ -59,34 +87,6 @@ func (r *trainingRepository) GetById(ctx context.Context, id string) (*Training,
 	}
 
 	return &training, nil
-}
-
-func (r *trainingRepository) GetLastByUserId(ctx context.Context, userID string) (*TrainingSession, error) {
-	const q = `
-		SELECT
-			id, user_id, training_id, distance, time, pace, created_at
-		FROM training_sessions
-		WHERE user_id = $1
-		ORDER BY created_at DESC
-		LIMIT 1`
-
-	var trainingSession TrainingSession
-	err := r.db.QueryRow(ctx, q, userID).Scan(
-		&trainingSession.ID,
-		&trainingSession.UserID,
-		&trainingSession.TrainingID,
-		&trainingSession.Distance,
-		&trainingSession.Time,
-		&trainingSession.Pace,
-	)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return &trainingSession, nil
 }
 
 func (r *trainingRepository) GetList(ctx context.Context, query *TrainingsQuery) ([]*TrainingItem, int, error) {
@@ -195,8 +195,8 @@ func (r *trainingRepository) Create(ctx context.Context, training *Training) (*T
 		)
 		SELECT
 				ins.id,
-				cat.code AS category_code,
-				cat.name AS category_name,
+				cat.code,
+				cat.name,
 				ins.level,
 				ins.name,
 				ins.descriptions,
@@ -243,4 +243,54 @@ func (r *trainingRepository) Create(ctx context.Context, training *Training) (*T
 	}
 
 	return training, nil
+}
+
+func (r *trainingRepository) GetLastSessionByUserId(ctx context.Context, userID string) (*TrainingSession, error) {
+	const q = `
+		SELECT
+			id, user_id, training_id, distance_meters, duration_seconds, pace, calories_kcal
+		FROM training_sessions
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1`
+
+	var trainingSession TrainingSession
+	err := r.db.QueryRow(ctx, q, userID).Scan(
+		&trainingSession.ID,
+		&trainingSession.UserID,
+		&trainingSession.TrainingID,
+		&trainingSession.DistanceMeters,
+		&trainingSession.DurationSeconds,
+		&trainingSession.Pace,
+		&trainingSession.CaloriesKcal,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &trainingSession, nil
+}
+
+func (r *trainingRepository) FinishSession(ctx context.Context, trainingSession *TrainingSession) (*TrainingSession, error) {
+	const q = `
+		INSERT INTO training_sessions
+			(user_id, training_id, distance_meters, duration_seconds, pace, calories_kcal)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			RETURNING id`
+
+	if err := r.db.QueryRow(ctx, q,
+		trainingSession.UserID,
+		trainingSession.TrainingID,
+		trainingSession.DistanceMeters,
+		trainingSession.DurationSeconds,
+		trainingSession.Pace,
+		trainingSession.CaloriesKcal,
+	).Scan(&trainingSession.ID); err != nil {
+		return nil, err
+	}
+
+	return trainingSession, nil
 }

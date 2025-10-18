@@ -56,9 +56,10 @@ CREATE TABLE training_sessions (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     training_id UUID REFERENCES trainings(id) ON DELETE SET NULL,
 
-    distance INT NOT NULL,          -- distance in meters
-    time INT NOT NULL,              -- duration in seconds
+    distance_meters INT NOT NULL,   -- distance in meters
+    duration_seconds INT NOT NULL,  -- duration in seconds
     pace NUMERIC(6,2) NOT NULL,     -- pace in minutes/100m
+    calories_kcal INT NOT NULL,     -- calories burned per session
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -77,7 +77,7 @@ func main() {
 
 	// Initialize usecases
 	authUsecase := auth.NewAuthUsecase(cfg, log, db.Pool, authRepo, userRepo)
-	trainingUsecase := training.NewTrainingUsecase(trainingRepo)
+	trainingUsecase := training.NewTrainingUsecase(trainingRepo, userRepo)
 
 	// Initialize handlers
 	healthHandler := health.NewHealthHandler(log, db)
@@ -146,8 +146,8 @@ func setupRoutes(
 
 		// Training endpoints - require authentication
 		mux.Handle("GET /api/v1/trainings/{id}", authMiddleware(trainingHandler.GetById))
-		mux.Handle("GET /api/v1/trainings/last", authMiddleware(trainingHandler.GetLastTraining))
 		mux.Handle("GET /api/v1/trainings", authMiddleware(trainingHandler.GetTrainings))
 		mux.Handle("POST /api/v1/trainings", authMiddleware(trainingHandler.CreateTraining))
+		mux.Handle("GET /api/v1/trainings/sessions/last", authMiddleware(trainingHandler.GetLastSession))
 	}
 }

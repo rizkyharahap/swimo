@@ -12,6 +12,7 @@ type SignUpRequest struct {
 	Email           string  `json:"email" example:"john@example.com"`
 	Password        string  `json:"password" example:"SecurePassword123"`
 	ConfirmPassword string  `json:"confirmPassword" example:"SecurePassword123"`
+	Gender          string  `json:"gender" example:"male"`
 	Age             int16   `json:"age" example:"30"`
 	Height          float64 `json:"height" example:"180"`
 	Weight          float64 `json:"weight" example:"75.5"`
@@ -27,6 +28,7 @@ type SignInRequest struct {
 type SignInResponse struct {
 	Name         string  `json:"name" example:"John Doe"`
 	Email        string  `json:"email" example:"john@example.com"`
+	Gender       string  `json:"gender" example:"male"`
 	Age          int16   `json:"age" example:"30"`
 	Height       float64 `json:"height" example:"180"`
 	Weight       float64 `json:"weight" example:"75.5"`
@@ -36,6 +38,7 @@ type SignInResponse struct {
 }
 
 type SignInGuestRequest struct {
+	Gender string  `json:"gender" example:"male"`
 	Age    int16   `json:"age" example:"30"`
 	Height float64 `json:"height" example:"180"`
 	Weight float64 `json:"weight" example:"75.5"`
@@ -43,6 +46,7 @@ type SignInGuestRequest struct {
 
 type SignInGuestResponse struct {
 	Name         string  `json:"name" example:"John Doe"`
+	Gender       string  `json:"gender" example:"male"`
 	Age          int16   `json:"age" example:"30"`
 	Height       float64 `json:"height" example:"180"`
 	Weight       float64 `json:"weight" example:"75.5"`
@@ -59,16 +63,6 @@ type RefreshTokenResponse struct {
 	Token        string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 	RefreshToken string `json:"refreshToken" example:"3d3dc788634e05b7d1d5fac06834d3b6a9b62..."`
 	ExpiresIn    int64  `json:"expiresInMs" example:"1799999"`
-}
-
-func (r *SignUpRequest) ToUserEntity(accountID string) *User {
-	return &User{
-		AccountID: accountID,
-		Name:      strings.TrimSpace(r.Name),
-		WeightKG:  r.Weight,
-		HeightCM:  r.Height,
-		AgeYears:  r.Age,
-	}
 }
 
 func trim(s string) string {

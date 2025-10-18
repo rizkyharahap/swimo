@@ -462,7 +462,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/trainings/last": {
+        "/trainings/sessions/last": {
             "get": {
                 "security": [
                     {
@@ -599,6 +599,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 30
                 },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
+                },
                 "height": {
                     "type": "number",
                     "example": 180
@@ -619,6 +623,10 @@ const docTemplate = `{
                 "expiresIn": {
                     "type": "integer",
                     "example": 1799999
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "height": {
                     "type": "number",
@@ -670,6 +678,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1799999
                 },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
+                },
                 "height": {
                     "type": "number",
                     "example": 180
@@ -706,6 +718,10 @@ const docTemplate = `{
                 "email": {
                     "type": "string",
                     "example": "john@example.com"
+                },
+                "gender": {
+                    "type": "string",
+                    "example": "male"
                 },
                 "height": {
                     "type": "number",
@@ -807,7 +823,7 @@ const docTemplate = `{
         "training.TrainingRequest": {
             "type": "object",
             "properties": {
-                "calories": {
+                "caloriesKcal": {
                     "type": "integer",
                     "example": 120
                 },
@@ -848,13 +864,17 @@ const docTemplate = `{
         "training.TrainingResponse": {
             "type": "object",
             "properties": {
-                "calories": {
+                "caloriesKcal": {
                     "type": "integer",
                     "example": 120
                 },
                 "categoryCode": {
                     "type": "string",
                     "example": "BREASTSTROKE"
+                },
+                "categoryName": {
+                    "type": "string",
+                    "example": "Breaststroke"
                 },
                 "content": {
                     "type": "string",
@@ -880,7 +900,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "https://cdn.example.com/thumbs/breaststroke.png"
                 },
-                "time": {
+                "timeLabel": {
                     "type": "string",
                     "example": "10-15 min"
                 },
@@ -893,9 +913,17 @@ const docTemplate = `{
         "training.TrainingSessionResponse": {
             "type": "object",
             "properties": {
-                "distance": {
+                "caloriesKcal": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "distanceMeters": {
                     "type": "integer",
                     "example": 1500
+                },
+                "durationSeconds": {
+                    "type": "integer",
+                    "example": 1800
                 },
                 "id": {
                     "type": "string",
@@ -904,10 +932,6 @@ const docTemplate = `{
                 "pace": {
                     "type": "number",
                     "example": 1.2
-                },
-                "time": {
-                    "type": "integer",
-                    "example": 1800
                 },
                 "trainingId": {
                     "type": "string",
