@@ -8,8 +8,8 @@ import (
 	"github.com/rizkyharahap/swimo/pkg/logger"
 )
 
-// RecoverMiddleware creates middleware that recovers from panics
-func RecoverMiddleware(log *logger.Logger) func(http.Handler) http.Handler {
+// Recover creates middleware that recovers from panics
+func Recover(log *logger.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {

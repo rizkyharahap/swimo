@@ -6,8 +6,22 @@ import (
 	"strings"
 )
 
-// CompressionMiddleware creates middleware that compresses HTTP responses
-func CompressionMiddleware(next http.Handler) http.Handler {
+// gzipResponseWriter wraps http.ResponseWriter to handle gzip compression
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	gzipWriter *gzip.Writer
+}
+
+func (gz *gzipResponseWriter) Write(data []byte) (int, error) {
+	return gz.gzipWriter.Write(data)
+}
+
+func (gz *gzipResponseWriter) WriteHeader(statusCode int) {
+	gz.ResponseWriter.WriteHeader(statusCode)
+}
+
+// Compression creates middleware that compresses HTTP responses
+func Compression(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if client accepts compression
 		acceptEncoding := r.Header.Get("Accept-Encoding")
@@ -34,18 +48,4 @@ func CompressionMiddleware(next http.Handler) http.Handler {
 		// Call next handler
 		next.ServeHTTP(compressedWriter, r)
 	})
-}
-
-// gzipResponseWriter wraps http.ResponseWriter to handle gzip compression
-type gzipResponseWriter struct {
-	http.ResponseWriter
-	gzipWriter *gzip.Writer
-}
-
-func (gz *gzipResponseWriter) Write(data []byte) (int, error) {
-	return gz.gzipWriter.Write(data)
-}
-
-func (gz *gzipResponseWriter) WriteHeader(statusCode int) {
-	gz.ResponseWriter.WriteHeader(statusCode)
 }

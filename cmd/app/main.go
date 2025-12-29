@@ -94,10 +94,10 @@ func main() {
 	// Apply middlewares
 	handler := middleware.Chain(
 		middleware.ErrorHandler,
-		middleware.RecoverMiddleware(log),
-		middleware.LoggingMiddleware(log),
-		middleware.CORSMiddleware(cfg.CORS),
-		middleware.CompressionMiddleware,
+		middleware.Recover(log),
+		middleware.Logging(log),
+		middleware.CORS(cfg.CORS),
+		middleware.Compression,
 	)(mux)
 
 	// Set handler
@@ -127,28 +127,32 @@ func setupRoutes(
 	// Register swagger routes
 	mux.Handle("/swagger/", swaggerHandler.Handler)
 
+	// V1 router
+	v1 := http.NewServeMux()
+	v1.Handle("/api/v1/", http.StripPrefix("/api/v1", mux))
+
 	// Health check endpoint
-	mux.HandleFunc("GET /api/v1/healthz", healthHandler.Check)
+	v1.HandleFunc("GET /healthz", healthHandler.Check)
 
 	if db != nil {
 		// Public endpoints - no authentication required
-		mux.HandleFunc("POST /api/v1/sign-up", authHandler.SignUp)
-		mux.HandleFunc("POST /api/v1/sign-in", authHandler.SignIn)
-		mux.HandleFunc("POST /api/v1/sign-in-guest", authHandler.SignInGuest)
-		mux.HandleFunc("POST /api/v1/refresh-token", authHandler.RefreshToken)
+		v1.HandleFunc("POST /sign-up", authHandler.SignUp)
+		v1.HandleFunc("POST /sign-in", authHandler.SignIn)
+		v1.HandleFunc("POST /sign-in-guest", authHandler.SignInGuest)
+		v1.HandleFunc("POST /refresh-token", authHandler.RefreshToken)
 
 		// Protected endpoints - require authentication
-		authMiddleware := func(h http.HandlerFunc) http.Handler {
-			return middleware.AuthMiddleware(cfg.Auth.JWTSecret, h)
-		}
+		authedRouter := http.NewServeMux()
 
-		mux.Handle("POST /api/v1/sign-out", authMiddleware(authHandler.SignOut))
+		authedRouter.HandleFunc("POST /sign-out", authHandler.SignOut)
 
 		// Training endpoints - require authentication
-		mux.Handle("GET /api/v1/trainings/{id}", authMiddleware(trainingHandler.GetById))
-		mux.Handle("GET /api/v1/trainings", authMiddleware(trainingHandler.GetTrainings))
-		mux.Handle("POST /api/v1/trainings", authMiddleware(trainingHandler.CreateTraining))
-		mux.Handle("GET /api/v1/trainings/sessions/last", authMiddleware(trainingHandler.GetLastSession))
-		mux.Handle("POST /api/v1/trainings/{id}/finish", authMiddleware(trainingHandler.FinishSession))
+		authedRouter.HandleFunc("GET /trainings/{id}", trainingHandler.GetById)
+		authedRouter.HandleFunc("GET /trainings", trainingHandler.GetTrainings)
+		authedRouter.HandleFunc("POST /trainings", trainingHandler.CreateTraining)
+		authedRouter.HandleFunc("GET /trainings/sessions/last", trainingHandler.GetLastSession)
+		authedRouter.HandleFunc("POST /trainings/{id}/finish", trainingHandler.FinishSession)
+
+		v1.Handle("/", middleware.Auth(cfg.Auth.JWTSecret)(authedRouter))
 	}
 }

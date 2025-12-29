@@ -7,14 +7,28 @@ import (
 	"github.com/rizkyharahap/swimo/pkg/logger"
 )
 
-// LoggingMiddleware creates middleware that logs HTTP requests and responses
-func LoggingMiddleware(log *logger.Logger) func(http.Handler) http.Handler {
+// wrappedWriter wraps http.ResponseWriter to capture status code
+type wrappedWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *wrappedWriter) WriteHeader(statusCode int) {
+	rw.ResponseWriter.WriteHeader(statusCode)
+	rw.statusCode = statusCode
+}
+
+// Logging creates middleware that logs HTTP requests and responses
+func Logging(log *logger.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
 			// Create response wrapper to capture status code
-			wrapped := &responseWriter{w, http.StatusOK}
+			wrapped := &wrappedWriter{
+				ResponseWriter: w,
+				statusCode:     http.StatusOK,
+			}
 
 			// Log incoming request
 			log.Info("Request started",
@@ -38,21 +52,10 @@ func LoggingMiddleware(log *logger.Logger) func(http.Handler) http.Handler {
 			log.Info("Request completed",
 				"method", r.Method,
 				"path", r.URL.Path,
-				"status", wrapped.status,
+				"status", wrapped.statusCode,
 				"duration_ms", duration.Milliseconds(),
 				"duration", duration.String(),
 			)
 		})
 	}
-}
-
-// responseWriter wraps http.ResponseWriter to capture status code
-type responseWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.status = code
-	rw.ResponseWriter.WriteHeader(code)
 }

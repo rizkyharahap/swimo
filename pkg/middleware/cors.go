@@ -6,8 +6,8 @@ import (
 	"github.com/rizkyharahap/swimo/config"
 )
 
-// CORSMiddleware creates middleware that handles CORS headers
-func CORSMiddleware(cfg config.CORSConfig) func(http.Handler) http.Handler {
+// CORS creates middleware that handles CORS headers
+func CORS(cfg config.CORSConfig) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Set CORS headers
@@ -36,16 +36,5 @@ func CORSMiddleware(cfg config.CORSConfig) func(http.Handler) http.Handler {
 			// Call next handler
 			next.ServeHTTP(w, r)
 		})
-	}
-}
-
-// DefaultCORSConfig returns default CORS configuration
-func DefaultCORSConfig() config.CORSConfig {
-	return config.CORSConfig{
-		AllowOrigins:  "*",
-		AllowMethods:  "GET, POST, PUT, DELETE, OPTIONS",
-		AllowHeaders:  "Content-Type, Authorization",
-		ExposeHeaders: "",
-		Credentials:   false,
 	}
 }
